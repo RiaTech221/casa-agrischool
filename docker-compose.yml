@@ -1,0 +1,27 @@
+﻿services:
+  mysqldb:
+    image: mysql:8.0
+    container_name: casa_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: casa_agrischool
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: casa_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysqldb
+      PMA_PORT: 3306
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysqldb
+
+volumes:
+  db_data:
