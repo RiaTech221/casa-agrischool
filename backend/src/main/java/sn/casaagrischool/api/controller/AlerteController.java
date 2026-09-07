@@ -33,8 +33,10 @@ public class AlerteController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Détail d'une alerte")
-    public ResponseEntity<Alerte> getAlerteById(@PathVariable Long id) {
-        return ResponseEntity.ok(alerteService.getAlerteById(id));
+    public ResponseEntity<AlerteDto> getAlerteById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(alerteService.getAlerteById(id, userDetails));
     }
 
     @PutMapping("/{id}/read")

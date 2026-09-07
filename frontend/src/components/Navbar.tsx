@@ -144,12 +144,12 @@ export const Navbar: React.FC = () => {
 
                 {/* User info */}
                 <div className="text-right">
-                  <div className="text-xs font-semibold leading-tight flex items-center justify-end gap-1">
+                  <Link to="/profile" className="text-xs font-semibold leading-tight flex items-center justify-end gap-1 hover:text-white transition-colors cursor-pointer">
                     <span>{user.prenom} {user.nom}</span>
                     {user.profilExpert?.estVerifie && (
                       <span title="Expert vérifié"><ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /></span>
                     )}
-                  </div>
+                  </Link>
                   <span className="text-[10px] text-emerald-300">
                     {isAdmin ? 'Administrateur' : user.profilExpert ? 'Expert Agricole' : 'Maraîcher'}
                   </span>
@@ -201,11 +201,11 @@ export const Navbar: React.FC = () => {
             <>
               <div className="flex items-center justify-between py-2 border-b border-emerald-800 mb-2">
                 <div className="flex items-center space-x-2">
-                  <div className="bg-emerald-800 p-2 rounded-full">
+                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="bg-emerald-800 p-2 rounded-full hover:bg-emerald-700 transition-colors">
                     <UserIcon className="w-4 h-4 text-emerald-300" />
-                  </div>
+                  </Link>
                   <div>
-                    <div className="text-sm font-bold text-white">{user.prenom} {user.nom}</div>
+                    <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="text-sm font-bold text-white hover:underline">{user.prenom} {user.nom}</Link>
                     <div className="text-xs text-emerald-400">{user.email}</div>
                   </div>
                 </div>

@@ -8,7 +8,7 @@ import sn.casaagrischool.api.dto.QuestionForumCreateDto;
 import sn.casaagrischool.api.dto.ReponseForumCreateDto;
 import sn.casaagrischool.api.entity.*;
 import sn.casaagrischool.api.entity.enums.StatutQuestion;
-import sn.casaagrischool.api.exception.BadRequestException;
+import org.springframework.security.access.AccessDeniedException;
 import sn.casaagrischool.api.exception.ResourceNotFoundException;
 import sn.casaagrischool.api.repository.*;
 import sn.casaagrischool.api.security.services.UserDetailsImpl;
@@ -108,7 +108,7 @@ public class ForumService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         if (!isAuteur && !isAdmin) {
-            throw new BadRequestException("Seul l'auteur de la question peut marquer la meilleure réponse");
+            throw new AccessDeniedException("Seul l'auteur de la question peut marquer la meilleure réponse");
         }
 
         // Réinitialiser les autres réponses de la question
@@ -132,7 +132,7 @@ public class ForumService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
         if (!isAuteur && !isAdmin) {
-            throw new BadRequestException("Action non autorisée");
+            throw new AccessDeniedException("Action non autorisée");
         }
 
         questionRepository.delete(question);

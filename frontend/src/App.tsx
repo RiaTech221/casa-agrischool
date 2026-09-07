@@ -18,6 +18,7 @@ import { AlertesPage } from './pages/AlertesPage';
 import { ForumPage } from './pages/ForumPage';
 import { QuestionDetailPage } from './pages/QuestionDetailPage';
 import { AdminPage } from './pages/AdminPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 export const App: React.FC = () => {
   return (
@@ -43,6 +44,7 @@ export const App: React.FC = () => {
                 <Route path="/alertes" element={<AlertesPage />} />
                 <Route path="/forum" element={<ForumPage />} />
                 <Route path="/forum/questions/:id" element={<QuestionDetailPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
               </Route>
 
               {/* Protected admin route */}

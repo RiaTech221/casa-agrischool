@@ -75,7 +75,20 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // CSRF désactivé car l'app utilise JWT via Authorization header (pas de cookies de session).
+            // Ce choix est documenté et justifié par l'architecture stateless.
             .csrf(csrf -> csrf.disable())
+            // SEC-06: Security Headers
+            .headers(headers -> headers
+                .contentTypeOptions(ct -> {}) // X-Content-Type-Options: nosniff
+                .frameOptions(fo -> fo.deny()) // X-Frame-Options: DENY
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000)) // HSTS 1 an
+                .referrerPolicy(rp -> rp.policy(
+                    org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicy(pp -> pp.policy("camera=(), microphone=(), geolocation=()"))
+            )
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> 

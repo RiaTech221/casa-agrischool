@@ -2,6 +2,8 @@ package sn.casaagrischool.api.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import sn.casaagrischool.api.entity.enums.ERole;
 
@@ -21,6 +23,9 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank
+    @Size(min = 10, message = "Le mot de passe doit contenir au moins 10 caractères")
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=_!]).*$", 
+             message = "Le mot de passe doit contenir au moins un chiffre, une minuscule, une majuscule et un caractère spécial")
     private String motDePasse;
 
     private String localisation;

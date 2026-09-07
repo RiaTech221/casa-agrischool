@@ -59,20 +59,21 @@ public class AuthService {
                 .build();
 
         Set<Role> roles = new HashSet<>();
-        ERole roleEnum = request.getRole() != null ? request.getRole() : ERole.ROLE_MARAICHER;
-
-        Role userRole = roleRepository.findByNom(roleEnum)
+        // SEC-01: On ignore la valeur de role envoyée par le client pour la sécurité (mass assignment).
+        // L'utilisateur obtient par défaut le rôle MARAICHER.
+        Role userRole = roleRepository.findByNom(ERole.ROLE_MARAICHER)
                 .orElseGet(() -> roleRepository.save(Role.builder()
-                        .nom(roleEnum)
-                        .description("Rôle " + roleEnum.name())
+                        .nom(ERole.ROLE_MARAICHER)
+                        .description("Rôle " + ERole.ROLE_MARAICHER.name())
                         .build()));
         roles.add(userRole);
         user.setRoles(roles);
 
         User savedUser = userRepository.save(user);
 
-        // Si rôle EXPERT, créer le profil expert
-        if (roleEnum == ERole.ROLE_EXPERT) {
+        // Si l'utilisateur demande explicitement à devenir EXPERT, on crée le profil, mais il reste MARAICHER
+        // en attendant la validation par l'ADMIN.
+        if (request.getRole() != null && request.getRole() == ERole.ROLE_EXPERT) {
             ProfilExpert profil = ProfilExpert.builder()
                     .user(savedUser)
                     .specialite(request.getSpecialite() != null ? request.getSpecialite() : "Expert Agricole")

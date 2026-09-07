@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Security: Ne jamais commiter les secrets ###
+.env
+*.env
+application-secrets.properties

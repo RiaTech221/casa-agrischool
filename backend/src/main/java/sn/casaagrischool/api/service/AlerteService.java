@@ -9,6 +9,7 @@ import sn.casaagrischool.api.entity.Alerte;
 import sn.casaagrischool.api.entity.Culture;
 import sn.casaagrischool.api.entity.User;
 import sn.casaagrischool.api.entity.UtilisateurAlerte;
+import org.springframework.security.access.AccessDeniedException;
 import sn.casaagrischool.api.exception.ResourceNotFoundException;
 import sn.casaagrischool.api.repository.AlerteRepository;
 import sn.casaagrischool.api.repository.CultureRepository;
@@ -73,14 +74,55 @@ public class AlerteService {
         }).collect(Collectors.toList());
     }
 
-    public Alerte getAlerteById(Long id) {
+    public AlerteDto getAlerteById(Long id, UserDetailsImpl userDetails) {
+        Alerte alerte = alerteRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alerte introuvable avec l'ID: " + id));
+
+        // Alertes générales : accessibles à tous les utilisateurs connectés
+        // Alertes liées à une culture : accessible si l'utilisateur cultive cette culture ou est ADMIN/EXPERT
+        if (alerte.getCulture() != null) {
+            boolean isAdminOrExpert = userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_EXPERT"));
+            if (!isAdminOrExpert) {
+                List<Culture> myCultures = exploitationCultureRepository.findDistinctCulturesByUserId(userDetails.getId());
+                boolean hasCulture = myCultures.stream()
+                        .anyMatch(c -> c.getId().equals(alerte.getCulture().getId()));
+                if (!hasCulture) {
+                    throw new AccessDeniedException("Vous n'avez pas accès à cette alerte");
+                }
+            }
+        }
+
+        UtilisateurAlerte ua = utilisateurAlerteRepository
+                .findByUserIdAndAlerteId(userDetails.getId(), id).orElse(null);
+        boolean lu = ua != null && ua.isLu();
+        java.time.LocalDateTime dateLecture = ua != null ? ua.getDateLecture() : null;
+
+        return AlerteDto.builder()
+                .id(alerte.getId())
+                .titre(alerte.getTitre())
+                .message(alerte.getMessage())
+                .type(alerte.getType())
+                .dateDebut(alerte.getDateDebut())
+                .dateFin(alerte.getDateFin())
+                .niveau(alerte.getNiveau())
+                .statut(alerte.isStatut())
+                .culture(alerte.getCulture())
+                .lu(lu)
+                .dateLecture(dateLecture)
+                .createdAt(alerte.getCreatedAt())
+                .build();
+    }
+
+    // Méthode privée interne pour récupérer une entité Alerte sans contrôle d'accès (usage interne uniquement)
+    private Alerte findAlerteOrThrow(Long id) {
         return alerteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alerte introuvable avec l'ID: " + id));
     }
 
     @Transactional
     public void markAsRead(Long alerteId, UserDetailsImpl userDetails) {
-        Alerte alerte = getAlerteById(alerteId);
+        Alerte alerte = findAlerteOrThrow(alerteId);
         User user = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 

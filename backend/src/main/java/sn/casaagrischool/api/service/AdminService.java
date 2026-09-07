@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import sn.casaagrischool.api.dto.AdminStatsDto;
 import sn.casaagrischool.api.dto.MessageResponse;
 import sn.casaagrischool.api.entity.ProfilExpert;
+import sn.casaagrischool.api.entity.Role;
 import sn.casaagrischool.api.entity.User;
 import sn.casaagrischool.api.entity.enums.ERole;
 import sn.casaagrischool.api.entity.enums.StatutQuestion;
@@ -26,6 +27,7 @@ public class AdminService {
     private final AlerteRepository alerteRepository;
     private final QuestionForumRepository questionForumRepository;
     private final ReponseForumRepository reponseForumRepository;
+    private final RoleRepository roleRepository;
 
     public AdminStatsDto getStatistics() {
         long totalUsers = userRepository.count();
@@ -81,6 +83,19 @@ public class AdminService {
         profil.setEstVerifie(verify);
         profil.setDateVerification(verify ? LocalDateTime.now() : null);
         profilExpertRepository.save(profil);
+
+        User user = profil.getUser();
+        if (verify) {
+            Role expertRole = roleRepository.findByNom(ERole.ROLE_EXPERT)
+                    .orElseGet(() -> roleRepository.save(Role.builder()
+                            .nom(ERole.ROLE_EXPERT)
+                            .description("Rôle EXPERT")
+                            .build()));
+            user.getRoles().add(expertRole);
+        } else {
+            user.getRoles().removeIf(r -> r.getNom() == ERole.ROLE_EXPERT);
+        }
+        userRepository.save(user);
 
         return new MessageResponse(verify ? "Expert vérifié avec succès !" : "Statut vérifié retiré.");
     }
