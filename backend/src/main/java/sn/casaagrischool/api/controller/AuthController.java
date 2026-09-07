@@ -39,4 +39,11 @@ public class AuthController {
     public ResponseEntity<UserProfileDto> getCurrentUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(authService.getCurrentUserProfile(userDetails));
     }
+    @PutMapping("/profile")
+    @Operation(summary = "Modifier le profil de l'utilisateur connecté")
+    public ResponseEntity<UserProfileDto> updateProfile(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestBody sn.casaagrischool.api.dto.UserProfileUpdateDto dto) {
+        return ResponseEntity.ok(authService.updateProfile(userDetails, dto));
+    }
 }

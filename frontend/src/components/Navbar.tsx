@@ -143,7 +143,7 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* User info */}
-                <div className="text-right">
+                <Link to="/profil" className="text-right hover:opacity-80 transition-opacity">
                   <div className="text-xs font-semibold leading-tight flex items-center justify-end gap-1">
                     <span>{user.prenom} {user.nom}</span>
                     {user.profilExpert?.estVerifie && (
@@ -153,7 +153,7 @@ export const Navbar: React.FC = () => {
                   <span className="text-[10px] text-emerald-300">
                     {isAdmin ? 'Administrateur' : user.profilExpert ? 'Expert Agricole' : 'Maraîcher'}
                   </span>
-                </div>
+                </Link>
 
                 {/* Logout Button */}
                 <button

@@ -129,6 +129,17 @@ export interface QuizSubmitResponse {
   bonnesReponses: Record<number, number>;
 }
 
+export interface ResultatQuiz {
+  id: number;
+  score: number;
+  nombreBonnesReponses: number;
+  totalQuestions: number;
+  reussi: boolean;
+  datePassage: string;
+  dureeReelleSecondes?: number;
+  quiz?: Quiz;
+}
+
 export interface Alerte {
   id: number;
   titre: string;

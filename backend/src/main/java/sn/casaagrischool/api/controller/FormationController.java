@@ -50,4 +50,12 @@ public class FormationController {
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(formationService.completeLecon(leconId, userDetails));
     }
+    @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('EXPERT')")
+    @Operation(summary = "Créer une nouvelle formation (Admin / Expert)")
+    public ResponseEntity<Formation> createFormation(
+            @jakarta.validation.Valid @RequestBody sn.casaagrischool.api.dto.FormationCreateDto dto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(formationService.createFormation(dto, userDetails));
+    }
 }

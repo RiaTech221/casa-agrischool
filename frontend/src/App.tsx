@@ -18,6 +18,7 @@ import { AlertesPage } from './pages/AlertesPage';
 import { ForumPage } from './pages/ForumPage';
 import { QuestionDetailPage } from './pages/QuestionDetailPage';
 import { AdminPage } from './pages/AdminPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 export const App: React.FC = () => {
   return (
@@ -37,6 +38,7 @@ export const App: React.FC = () => {
               {/* Protected user routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/profil" element={<ProfilePage />} />
                 <Route path="/exploitations" element={<ExploitationsPage />} />
                 <Route path="/formations/:id" element={<FormationDetailPage />} />
                 <Route path="/quiz/:id" element={<QuizPage />} />
