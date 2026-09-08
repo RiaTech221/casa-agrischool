@@ -83,21 +83,31 @@ export const ForumPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header & Ask Question Bar */}
+      <div className="flex flex-col space-y-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Forum Maraîcher & Entraide</h1>
           <p className="text-xs sm:text-sm text-slate-500">
             Posez vos questions agronomiques. Nos experts vérifiés et vos pairs maraîchers vous répondent.
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-colors"
+        
+        <div 
+          onClick={() => {
+            if (selectedCat) setCatId(String(selectedCat));
+            setShowModal(true);
+          }}
+          className="w-full flex items-center bg-white border border-slate-300 rounded-2xl p-2 cursor-text hover:border-emerald-400 hover:ring-2 hover:ring-emerald-50 transition-all shadow-sm group"
         >
-          <Plus className="w-4 h-4" />
-          <span>Poser une question</span>
-        </button>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mr-3 group-hover:bg-emerald-100 transition-colors">
+            <MessageSquare className="w-5 h-5 text-emerald-600" />
+          </div>
+          <span className="text-slate-400 text-sm flex-1">Poser une question sur une culture, une maladie...</span>
+          <button className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-md group-hover:bg-emerald-500 transition-colors flex items-center space-x-1">
+            <Plus className="w-4 h-4" />
+            <span>Publier</span>
+          </button>
+        </div>
       </div>
 
       {/* Search & Categories */}

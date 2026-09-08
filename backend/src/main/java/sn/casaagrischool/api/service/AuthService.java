@@ -20,6 +20,7 @@ import sn.casaagrischool.api.repository.RoleRepository;
 import sn.casaagrischool.api.repository.UserRepository;
 import sn.casaagrischool.api.security.jwt.JwtUtils;
 import sn.casaagrischool.api.security.services.UserDetailsImpl;
+import sn.casaagrischool.api.util.PhoneUtils;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +40,10 @@ public class AuthService {
 
     @Transactional
     public JwtResponse register(RegisterRequest request) {
+        if (request.getTelephone() != null) {
+            request.setTelephone(PhoneUtils.normalize(request.getTelephone()));
+        }
+
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("Erreur: Cet email est déjà utilisé !");
         }

@@ -99,4 +99,26 @@ public class FormationService {
 
         return new MessageResponse("Leçon validée ! +10 points gagnés.");
     }
+
+    @Transactional
+    public Formation createFormation(Formation formation) {
+        return formationRepository.save(formation);
+    }
+
+    @Transactional
+    public Formation updateFormation(Long id, Formation formation) {
+        Formation existing = getFormationById(id);
+        existing.setTitre(formation.getTitre());
+        existing.setDescription(formation.getDescription());
+        existing.setNiveau(formation.getNiveau());
+        existing.setStatut(formation.getStatut());
+        existing.setImageUrl(formation.getImageUrl());
+        return formationRepository.save(existing);
+    }
+
+    @Transactional
+    public void deleteFormation(Long id) {
+        Formation existing = getFormationById(id);
+        formationRepository.delete(existing);
+    }
 }

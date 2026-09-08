@@ -14,6 +14,7 @@ import sn.casaagrischool.api.exception.ResourceNotFoundException;
 import sn.casaagrischool.api.repository.ProfilExpertRepository;
 import sn.casaagrischool.api.repository.UserRepository;
 import sn.casaagrischool.api.security.services.UserDetailsImpl;
+import sn.casaagrischool.api.util.PhoneUtils;
 
 import java.util.Optional;
 
@@ -31,6 +32,10 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
 
         // Vérifier unicité du téléphone s'il a changé
+        if (dto.getTelephone() != null) {
+            dto.setTelephone(PhoneUtils.normalize(dto.getTelephone()));
+        }
+
         if (!user.getTelephone().equals(dto.getTelephone())) {
             if (userRepository.existsByTelephone(dto.getTelephone())) {
                 throw new BadRequestException("Ce numéro de téléphone est déjà utilisé !");

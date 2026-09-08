@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Sprout, UserPlus, AlertCircle, Phone, Mail, Lock, User, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -21,21 +23,64 @@ export const RegisterPage: React.FC = () => {
   });
 
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    // Email validation
+    if (!EMAIL_REGEX.test(form.email)) {
+      newErrors.email = "L'adresse email n'est pas valide.";
+    }
+
+    // Password validation (same as backend)
+    const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=_!]).*$/;
+    if (form.motDePasse.length < 10) {
+      newErrors.motDePasse = "Le mot de passe doit contenir au moins 10 caractères.";
+    } else if (!passwordRegex.test(form.motDePasse)) {
+      newErrors.motDePasse = "Doit contenir chiffre, minuscule, majuscule et caractère spécial.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       await register(form);
       navigate('/dashboard');
     } catch (err: any) {
+      if (err.response?.data?.errors) {
+        // Handle backend field errors if any
+        const backendErrors: Record<string, string> = {};
+        if (Array.isArray(err.response.data.errors)) {
+          err.response.data.errors.forEach((e: any) => {
+            backendErrors[e.field || ''] = e.defaultMessage || e.message;
+          });
+        }
+        setErrors(backendErrors);
+      }
       setError(err.response?.data?.message || 'Erreur lors de la création du compte. Vérifiez les informations.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getInputClass = (fieldName: string) => {
+    const base = "w-full px-3.5 py-2.5 rounded-xl border text-sm focus:ring-2 ";
+    return base + (errors[fieldName] 
+      ? "border-red-400 bg-red-50 focus:ring-red-500 text-red-900" 
+      : "border-slate-300 focus:ring-emerald-500");
   };
 
   return (
@@ -64,10 +109,14 @@ export const RegisterPage: React.FC = () => {
                 type="text"
                 required
                 value={form.prenom}
-                onChange={(e) => setForm({ ...form, prenom: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, prenom: e.target.value });
+                  if (errors.prenom) setErrors({...errors, prenom: ''});
+                }}
                 placeholder="Ousmane"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={getInputClass('prenom')}
               />
+              {errors.prenom && <p className="mt-1 text-[10px] text-red-500">{errors.prenom}</p>}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nom</label>
@@ -75,10 +124,14 @@ export const RegisterPage: React.FC = () => {
                 type="text"
                 required
                 value={form.nom}
-                onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, nom: e.target.value });
+                  if (errors.nom) setErrors({...errors, nom: ''});
+                }}
                 placeholder="Diatta"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={getInputClass('nom')}
               />
+              {errors.nom && <p className="mt-1 text-[10px] text-red-500">{errors.nom}</p>}
             </div>
           </div>
 
@@ -89,10 +142,14 @@ export const RegisterPage: React.FC = () => {
                 type="tel"
                 required
                 value={form.telephone}
-                onChange={(e) => setForm({ ...form, telephone: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, telephone: e.target.value });
+                  if (errors.telephone) setErrors({...errors, telephone: ''});
+                }}
                 placeholder="+221 77..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={getInputClass('telephone')}
               />
+              {errors.telephone && <p className="mt-1 text-[10px] text-red-500">{errors.telephone}</p>}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Email</label>
@@ -100,10 +157,19 @@ export const RegisterPage: React.FC = () => {
                 type="email"
                 required
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm({ ...form, email: val });
+                  if (val && !EMAIL_REGEX.test(val)) {
+                    setErrors(prev => ({...prev, email: "L'adresse email n'est pas valide."}));
+                  } else {
+                    setErrors(prev => ({...prev, email: ''}));
+                  }
+                }}
                 placeholder="adresse@mail.com"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={getInputClass('email')}
               />
+              {errors.email && <p className="mt-1 text-[10px] font-medium text-red-500">{errors.email}</p>}
             </div>
           </div>
 
@@ -114,10 +180,14 @@ export const RegisterPage: React.FC = () => {
                 type="text"
                 required
                 value={form.localisation}
-                onChange={(e) => setForm({ ...form, localisation: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, localisation: e.target.value });
+                  if (errors.localisation) setErrors({...errors, localisation: ''});
+                }}
                 placeholder="ex: Ziguinchor, Nyassia"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm"
+                className={getInputClass('localisation')}
               />
+              {errors.localisation && <p className="mt-1 text-[10px] text-red-500">{errors.localisation}</p>}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mot de passe</label>
@@ -125,10 +195,14 @@ export const RegisterPage: React.FC = () => {
                 type="password"
                 required
                 value={form.motDePasse}
-                onChange={(e) => setForm({ ...form, motDePasse: e.target.value })}
-                placeholder="Au moins 6 caractères"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 text-sm"
+                onChange={(e) => {
+                  setForm({ ...form, motDePasse: e.target.value });
+                  if (errors.motDePasse) setErrors({...errors, motDePasse: ''});
+                }}
+                placeholder="Au moins 10 caractères"
+                className={getInputClass('motDePasse')}
               />
+              {errors.motDePasse && <p className="mt-1 text-[10px] font-medium text-red-500 leading-tight">{errors.motDePasse}</p>}
             </div>
           </div>
 

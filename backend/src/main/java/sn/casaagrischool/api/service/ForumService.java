@@ -75,6 +75,13 @@ public class ForumService {
 
     @Transactional
     public ReponseForum addAnswer(Long questionId, ReponseForumCreateDto dto, UserDetailsImpl userDetails) {
+        // Un maraîcher ne peut pas répondre
+        boolean isMaraicher = userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_MARAICHER"));
+        if (isMaraicher && userDetails.getAuthorities().size() == 1) { // Vérifie qu'il n'est que maraîcher
+             throw new AccessDeniedException("Les maraîchers ne sont pas autorisés à répondre aux questions du forum. Seuls les experts le peuvent.");
+        }
+        
         QuestionForum question = getQuestionById(questionId);
         User auteur = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));

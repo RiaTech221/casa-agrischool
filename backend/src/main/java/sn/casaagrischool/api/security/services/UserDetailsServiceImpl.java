@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.casaagrischool.api.entity.User;
 import sn.casaagrischool.api.repository.UserRepository;
+import sn.casaagrischool.api.util.PhoneUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Rechercher par email ou par téléphone
         User user = userRepository.findByEmail(username)
-                .or(() -> userRepository.findByTelephone(username))
+                .or(() -> userRepository.findByTelephone(PhoneUtils.normalize(username)))
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur introuvable avec l'identifiant : " + username));
 
         return UserDetailsImpl.build(user);

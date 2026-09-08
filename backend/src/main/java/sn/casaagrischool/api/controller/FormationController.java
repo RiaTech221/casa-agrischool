@@ -50,4 +50,28 @@ public class FormationController {
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(formationService.completeLecon(leconId, userDetails));
     }
+
+    // --- Administration (CRUD) ---
+
+    @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Admin : Créer une nouvelle formation")
+    public ResponseEntity<Formation> createFormation(@RequestBody Formation formation) {
+        return ResponseEntity.ok(formationService.createFormation(formation));
+    }
+
+    @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Admin : Modifier une formation existante")
+    public ResponseEntity<Formation> updateFormation(@PathVariable Long id, @RequestBody Formation formation) {
+        return ResponseEntity.ok(formationService.updateFormation(id, formation));
+    }
+
+    @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Admin : Supprimer une formation")
+    public ResponseEntity<MessageResponse> deleteFormation(@PathVariable Long id) {
+        formationService.deleteFormation(id);
+        return ResponseEntity.ok(new MessageResponse("Formation supprimée avec succès"));
+    }
 }
