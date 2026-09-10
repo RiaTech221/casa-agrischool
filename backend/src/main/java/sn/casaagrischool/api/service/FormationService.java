@@ -24,6 +24,7 @@ public class FormationService {
     private final LeconRepository leconRepository;
     private final ProgressionFormationRepository progressionRepository;
     private final UserRepository userRepository;
+    private final CultureRepository cultureRepository;
 
     public List<Formation> getAllPublishedFormations(Long cultureId) {
         if (cultureId != null) {
@@ -99,9 +100,27 @@ public class FormationService {
 
         return new MessageResponse("Leçon validée ! +10 points gagnés.");
     }
-
     @Transactional
-    public Formation createFormation(Formation formation) {
+    public Formation createFormation(sn.casaagrischool.api.dto.FormationCreateDto dto, UserDetailsImpl userDetails) {
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
+
+        Culture culture = null;
+        if (dto.getCultureId() != null) {
+            culture = cultureRepository.findById(dto.getCultureId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Culture non trouvée"));
+        }
+
+        Formation formation = Formation.builder()
+                .titre(dto.getTitre())
+                .description(dto.getDescription())
+                .niveau(dto.getNiveau() != null ? dto.getNiveau() : sn.casaagrischool.api.entity.enums.NiveauFormation.DEBUTANT)
+                .imageUrl(dto.getImageUrl())
+                .statut(StatutContenu.PUBLIE)
+                .culture(culture)
+                .createur(user)
+                .build();
+
         return formationRepository.save(formation);
     }
 

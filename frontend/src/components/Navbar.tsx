@@ -143,6 +143,7 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* User info */}
+                {/* User info */}
                 <div className="text-right">
                   <Link to="/profile" className="text-xs font-semibold leading-tight flex items-center justify-end gap-1 hover:text-white transition-colors cursor-pointer">
                     <span>{user.prenom} {user.nom}</span>

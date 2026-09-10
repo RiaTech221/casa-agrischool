@@ -38,6 +38,7 @@ export const App: React.FC = () => {
               {/* Protected user routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/profil" element={<ProfilePage />} />
                 <Route path="/exploitations" element={<ExploitationsPage />} />
                 <Route path="/formations/:id" element={<FormationDetailPage />} />
                 <Route path="/quiz/:id" element={<QuizPage />} />

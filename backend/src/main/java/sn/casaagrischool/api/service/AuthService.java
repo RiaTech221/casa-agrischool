@@ -205,4 +205,25 @@ public class AuthService {
                 .createdAt(user.getCreatedAt())
                 .build();
     }
+    @Transactional
+    public UserProfileDto updateProfile(UserDetailsImpl userDetails, UserProfileUpdateDto dto) {
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
+
+        if (dto.getNom() != null && !dto.getNom().isBlank()) user.setNom(dto.getNom());
+        if (dto.getPrenom() != null && !dto.getPrenom().isBlank()) user.setPrenom(dto.getPrenom());
+        if (dto.getTelephone() != null && !dto.getTelephone().isBlank()) user.setTelephone(dto.getTelephone());
+        if (dto.getLocalisation() != null) user.setLocalisation(dto.getLocalisation());
+
+        if (user.getProfilExpert() != null) {
+            ProfilExpert p = user.getProfilExpert();
+            if (dto.getSpecialite() != null) p.setSpecialite(dto.getSpecialite());
+            if (dto.getBiographie() != null) p.setBiographie(dto.getBiographie());
+            if (dto.getOrganisme() != null) p.setOrganisme(dto.getOrganisme());
+            profilExpertRepository.save(p);
+        }
+
+        User saved = userRepository.save(user);
+        return getCurrentUserProfile(UserDetailsImpl.build(saved));
+    }
 }

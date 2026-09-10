@@ -1,253 +1,264 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { 
+  User as UserIcon, Award, ShieldCheck, MapPin, Phone, Mail, 
+  Save, CheckCircle2, BookOpen, Clock, Sparkles 
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { userService } from '../services/userService';
-import { User, ShieldCheck, ShieldAlert, User as UserIcon, Phone, MapPin, Mail, Award, Briefcase, BookOpen } from 'lucide-react';
+import api from '../services/api';
+import { ResultatQuiz } from '../types';
 
 export const ProfilePage: React.FC = () => {
-  const { user, refreshUser, isExpert } = useAuth();
-  
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const { user, refreshUser, isExpert, isAdmin } = useAuth();
 
-  const [nom, setNom] = useState(user?.nom || '');
-  const [prenom, setPrenom] = useState(user?.prenom || '');
-  const [telephone, setTelephone] = useState(user?.telephone || '');
-  const [localisation, setLocalisation] = useState(user?.localisation || '');
+  const [nom, setNom] = useState('');
+  const [prenom, setPrenom] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [localisation, setLocalisation] = useState('');
+  const [specialite, setSpecialite] = useState('');
+  const [organisme, setOrganisme] = useState('');
+  const [biographie, setBiographie] = useState('');
 
-  const [specialite, setSpecialite] = useState(user?.profilExpert?.specialite || '');
-  const [biographie, setBiographie] = useState(user?.profilExpert?.biographie || '');
-  const [organisme, setOrganisme] = useState(user?.profilExpert?.organisme || '');
+  const [results, setResults] = useState<ResultatQuiz[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setNom(user.nom || '');
+      setPrenom(user.prenom || '');
+      setTelephone(user.telephone || '');
+      setLocalisation(user.localisation || '');
+
+      if (user.profilExpert) {
+        setSpecialite(user.profilExpert.specialite || '');
+        setOrganisme(user.profilExpert.organisme || '');
+        setBiographie(user.profilExpert.biographie || '');
+      }
+    }
+
+    api.get<ResultatQuiz[]>('/quiz/results')
+      .then(res => setResults(res.data))
+      .catch(() => {});
+  }, [user]);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSuccessMsg('');
+
+    try {
+      await api.put('/auth/profile', {
+        nom,
+        prenom,
+        telephone,
+        localisation,
+        specialite,
+        organisme,
+        biographie
+      });
+      await refreshUser();
+      setSuccessMsg('Profil mis à jour avec succès !');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Erreur lors de la mise à jour du profil');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!user) return null;
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
-    try {
-      await userService.updateProfile({ nom, prenom, telephone, localisation });
-      await refreshUser();
-      setMessage({ text: 'Profil mis à jour avec succès.', type: 'success' });
-    } catch (error: any) {
-      setMessage({ text: error.response?.data?.message || 'Erreur lors de la mise à jour.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateExpert = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
-    try {
-      await userService.updateExpertProfile({ specialite, biographie, organisme });
-      await refreshUser();
-      setMessage({ text: 'Profil expert mis à jour avec succès.', type: 'success' });
-    } catch (error: any) {
-      setMessage({ text: error.response?.data?.message || 'Erreur lors de la mise à jour expert.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Mon Profil</h1>
-        <p className="mt-2 text-sm text-slate-600">Gérez vos informations personnelles et vos paramètres.</p>
-      </div>
-
-      {message && (
-        <div className={`mb-6 p-4 rounded-md flex items-center ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-          {message.text}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Colonne de gauche: Infos de base & Statut */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="bg-green-600 h-24"></div>
-            <div className="px-6 pb-6 relative">
-              <div className="h-20 w-20 bg-white rounded-full p-1 absolute -top-10 left-6 border border-slate-200">
-                <div className="h-full w-full bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                  <UserIcon size={32} />
-                </div>
-              </div>
-              <div className="pt-12">
-                <h2 className="text-xl font-bold text-slate-900">{user.prenom} {user.nom}</h2>
-                <div className="mt-1 flex items-center text-sm text-slate-500">
-                  <Mail size={16} className="mr-1.5" />
-                  {user.email}
-                </div>
-                
-                <div className="mt-6 border-t border-slate-100 pt-4">
-                  <div className="flex items-center text-sm text-slate-600 mb-2">
-                    <Phone size={16} className="mr-2 text-slate-400" />
-                    {user.telephone}
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <MapPin size={16} className="mr-2 text-slate-400" />
-                    {user.localisation || 'Non spécifié'}
-                  </div>
-                </div>
-
-                <div className="mt-6 bg-slate-50 rounded-lg p-4 border border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-600 flex items-center">
-                      <Award size={16} className="mr-1.5 text-green-500" /> Points
-                    </span>
-                    <span className="text-lg font-bold text-green-600">{user.points}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center space-x-4">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500 text-emerald-950 flex items-center justify-center font-black text-2xl shadow-md">
+            {user.prenom?.[0] || 'U'}
           </div>
-          
-          {isExpert && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 className="text-md font-semibold text-slate-900 mb-4 flex items-center">
-                <Briefcase size={18} className="mr-2 text-slate-500" />
-                Statut Expert
-              </h3>
-              {user.profilExpert?.estVerifie ? (
-                <div className="flex items-start bg-green-50 text-green-700 p-3 rounded-md border border-green-200">
-                  <ShieldCheck size={20} className="mr-2 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-semibold">Profil vérifié</p>
-                    <p className="text-green-600 text-xs mt-1">Vous êtes un expert validé par la plateforme.</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start bg-amber-50 text-amber-700 p-3 rounded-md border border-amber-200">
-                  <ShieldAlert size={20} className="mr-2 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-semibold">En attente de vérification</p>
-                    <p className="text-amber-600 text-xs mt-1">Votre profil sera examiné par un administrateur.</p>
-                  </div>
-                </div>
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <h1 className="text-2xl font-black">{user.prenom} {user.nom}</h1>
+              {user.profilExpert?.estVerifie && (
+                <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500 text-emerald-950">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Expert Vérifié</span>
+                </span>
               )}
             </div>
-          )}
+            <p className="text-xs text-emerald-200">
+              {isAdmin ? 'Administrateur Système' : isExpert ? 'Expert Agronome' : 'Maraîcher de Casamance'}
+            </p>
+          </div>
         </div>
 
-        {/* Colonne de droite: Formulaires */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-200 bg-slate-50">
-              <h3 className="text-lg font-medium text-slate-900">Informations générales</h3>
-            </div>
-            <div className="p-6">
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
-                    <input
-                      type="text"
-                      value={prenom}
-                      onChange={(e) => setPrenom(e.target.value)}
-                      required
-                      className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nom</label>
-                    <input
-                      type="text"
-                      value={nom}
-                      onChange={(e) => setNom(e.target.value)}
-                      required
-                      className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
-                    <input
-                      type="tel"
-                      value={telephone}
-                      onChange={(e) => setTelephone(e.target.value)}
-                      required
-                      className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Localisation</label>
-                    <input
-                      type="text"
-                      value={localisation}
-                      onChange={(e) => setLocalisation(e.target.value)}
-                      className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                      placeholder="Ex: Ziguinchor, Bignona"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end pt-4 border-t border-slate-100">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                  >
-                    {loading ? 'Enregistrement...' : 'Enregistrer les modifications'}
-                  </button>
-                </div>
-              </form>
+        {/* Points & Badge Status */}
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center space-x-4 shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-md">
+            <Award className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-white">{user.points || 0} pts</div>
+            <div className="text-xs font-semibold text-emerald-200">
+              {user.points > 100 ? 'Agriculteur Confirmé ⭐' : 'Maraîcher Apprenant 🌱'}
             </div>
           </div>
+        </div>
+      </div>
 
-          {isExpert && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <h3 className="text-lg font-medium text-slate-900">Profil Expert</h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Optionnel
-                </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Formulaire d'édition */}
+        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h2 className="text-lg font-bold text-slate-900">Modifier mes informations</h2>
+            <p className="text-xs text-slate-500">Mettez à jour vos coordonnées personnelles et professionnelles</p>
+          </div>
+
+          {successMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleUpdate} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Prénom</label>
+                <input
+                  type="text"
+                  required
+                  value={prenom}
+                  onChange={(e) => setPrenom(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"
+                />
               </div>
-              <div className="p-6">
-                <form onSubmit={handleUpdateExpert} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Spécialité</label>
-                      <input
-                        type="text"
-                        value={specialite}
-                        onChange={(e) => setSpecialite(e.target.value)}
-                        className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                        placeholder="Ex: Maraîchage bio, Irrigation"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Organisme / Entreprise</label>
-                      <input
-                        type="text"
-                        value={organisme}
-                        onChange={(e) => setOrganisme(e.target.value)}
-                        className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                        placeholder="Ex: INSAH, FAO, Indépendant"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Biographie</label>
-                      <textarea
-                        rows={4}
-                        value={biographie}
-                        onChange={(e) => setBiographie(e.target.value)}
-                        className="w-full rounded-md border-slate-300 shadow-sm focus:border-green-500 focus:ring-green-500 bg-white border p-2"
-                        placeholder="Présentez votre parcours et votre expertise..."
-                      ></textarea>
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-4 border-t border-slate-100">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                    >
-                      {loading ? 'Enregistrement...' : 'Mettre à jour mon profil expert'}
-                    </button>
-                  </div>
-                </form>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nom</label>
+                <input
+                  type="text"
+                  required
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"
+                />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Téléphone</label>
+                <input
+                  type="text"
+                  required
+                  value={telephone}
+                  onChange={(e) => setTelephone(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Localisation</label>
+                <input
+                  type="text"
+                  value={localisation}
+                  onChange={(e) => setLocalisation(e.target.value)}
+                  placeholder="ex: Nyassia, Ziguinchor"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Email (lecture seule) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Adresse Email</label>
+              <input
+                type="email"
+                disabled
+                value={user.email}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-sm cursor-not-allowed"
+              />
+            </div>
+
+            {/* Section Expert si applicable */}
+            {user.profilExpert && (
+              <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-3 pt-4">
+                <div className="flex items-center space-x-2 text-emerald-900 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Détails du Profil Expert</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-emerald-900 uppercase mb-1">Spécialité</label>
+                  <input
+                    type="text"
+                    value={specialite}
+                    onChange={(e) => setSpecialite(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-emerald-900 uppercase mb-1">Organisme / Institution</label>
+                  <input
+                    type="text"
+                    value={organisme}
+                    onChange={(e) => setOrganisme(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-emerald-900 uppercase mb-1">Biographie</label>
+                  <textarea
+                    rows={3}
+                    value={biographie}
+                    onChange={(e) => setBiographie(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-colors flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>{saving ? 'Enregistrement...' : 'Mettre à jour mon profil'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Historique des Quiz */}
+        <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+          <div className="border-b border-slate-100 pb-3">
+            <h2 className="text-base font-bold text-slate-900">Historique de mes Quiz</h2>
+            <p className="text-xs text-slate-500">Scores enregistrés et validés côté serveur</p>
+          </div>
+
+          {results.length === 0 ? (
+            <p className="text-xs text-slate-400 italic py-4">Aucun quiz passé pour le moment.</p>
+          ) : (
+            <div className="space-y-3">
+              {results.map(r => (
+                <div key={r.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900">{r.quiz?.titre || 'Évaluation'}</span>
+                    <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                      r.reussi ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {r.reussi ? 'RÉUSSI' : 'ÉCHOUÉ'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-500 text-[11px] pt-1">
+                    <span>Score : <strong className="text-slate-800">{r.score}%</strong> ({r.nombreBonnesReponses}/{r.totalQuestions})</span>
+                    <span>{new Date(r.datePassage).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
