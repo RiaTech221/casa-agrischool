@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface ReponseForumRepository extends JpaRepository<ReponseForum, Long> {
+    List<ReponseForum> findByQuestionIdOrderByVotesDescCreatedAtAsc(Long questionId);
     List<ReponseForum> findByQuestionIdOrderByCreatedAtAsc(Long questionId);
 }

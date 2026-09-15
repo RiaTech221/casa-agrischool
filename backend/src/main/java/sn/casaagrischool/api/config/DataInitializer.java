@@ -63,7 +63,7 @@ public class DataInitializer implements CommandLineRunner {
                 .motDePasse(passwordEncoder.encode("passer123"))
                 .localisation("Ziguinchor")
                 .actif(true)
-                .points(500)
+                .points(0)
                 .roles(new HashSet<>(Set.of(roleAdmin, roleMaraicher)))
                 .build();
         userRepository.save(admin);
@@ -77,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
                 .motDePasse(passwordEncoder.encode("passer123"))
                 .localisation("Bignona / Ziguinchor")
                 .actif(true)
-                .points(350)
+                .points(0)
                 .roles(new HashSet<>(Set.of(roleExpert)))
                 .build();
         userRepository.save(expertUser);
@@ -102,7 +102,7 @@ public class DataInitializer implements CommandLineRunner {
                 .motDePasse(passwordEncoder.encode("passer123"))
                 .localisation("Ziguinchor (Commune de Nyassia)")
                 .actif(true)
-                .points(60)
+                .points(0)
                 .roles(new HashSet<>(Set.of(roleMaraicher)))
                 .build();
         userRepository.save(maraicher);
@@ -189,8 +189,38 @@ public class DataInitializer implements CommandLineRunner {
                 .typeContenu(TypeContenu.TEXTE)
                 .ordre(1)
                 .dureeEstimee(8)
+                .fichierJointUrl("https://www.fao.org/3/i3246f/i3246f.pdf")
+                .fichierJointNom("Guide_Technique_Pepiniere_Tomate_Casamance.pdf")
                 .module(mod1)
                 .build());
+
+        // Quiz Leçon 1 Tomate (Option A : un quiz systématique par leçon)
+        Quiz quizLec1 = quizRepository.save(Quiz.builder()
+                .titre("Quiz : Choix des semences et pépinière")
+                .dureeMinutes(5)
+                .scoreMinimum(70)
+                .lecon(lec1)
+                .build());
+
+        QuestionQuiz qLec1_1 = questionQuizRepository.save(QuestionQuiz.builder()
+                .enonce("Quelles variétés de tomate sont recommandées en Casamance contre le flétrissement bactérien ?")
+                .ordre(1)
+                .points(10)
+                .quiz(quizLec1)
+                .build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Les variétés tolérantes comme Mongal F1 ou Nadira F1").estCorrecte(true).ordre(1).questionQuiz(qLec1_1).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("N'importe quelle variété sans certification").estCorrecte(false).ordre(2).questionQuiz(qLec1_1).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Les semences de pomme de terre").estCorrecte(false).ordre(3).questionQuiz(qLec1_1).build());
+
+        QuestionQuiz qLec1_2 = questionQuizRepository.save(QuestionQuiz.builder()
+                .enonce("Quelle est la proportion idéale du substrat pour la pépinière ?")
+                .ordre(2)
+                .points(10)
+                .quiz(quizLec1)
+                .build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("2/3 de terre franche et 1/3 de compost bien décomposé").estCorrecte(true).ordre(1).questionQuiz(qLec1_2).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("100% de sable marin salé").estCorrecte(false).ordre(2).questionQuiz(qLec1_2).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Terre argileuse compacte sans aération").estCorrecte(false).ordre(3).questionQuiz(qLec1_2).build());
 
         Lecon lec2 = leconRepository.save(Lecon.builder()
                 .titre("Repiquage, espacement et tuteurage")
@@ -198,6 +228,8 @@ public class DataInitializer implements CommandLineRunner {
                 .typeContenu(TypeContenu.TEXTE)
                 .ordre(2)
                 .dureeEstimee(12)
+                .fichierJointUrl("https://www.fao.org/3/i3246f/i3246f.pdf")
+                .fichierJointNom("Fiche_Repiquage_et_Tuteurage_Tomate.pdf")
                 .module(mod1)
                 .build());
 
@@ -249,7 +281,7 @@ public class DataInitializer implements CommandLineRunner {
                 .formation(fPiment)
                 .build());
 
-        leconRepository.save(Lecon.builder()
+        Lecon lecPiment1 = leconRepository.save(Lecon.builder()
                 .titre("Préparation du purin de neem et paillage organique")
                 .contenu("### 1. Utilisation du Neem local\nLe purin de graines ou feuilles de neem broyées est un répulsif naturel puissant contre les acariens et les thrips.\n\n### 2. Le paillage (Mulch)\nLe paillage avec de la paille de riz ou d'arachide permet de conserver l'humidité et d'abaisser la température du sol de 4 à 5°C.")
                 .typeContenu(TypeContenu.TEXTE)
@@ -257,6 +289,34 @@ public class DataInitializer implements CommandLineRunner {
                 .dureeEstimee(10)
                 .module(modPiment1)
                 .build());
+
+        // Quiz Leçon 1 Piment
+        Quiz quizPiment1 = quizRepository.save(Quiz.builder()
+                .titre("Quiz : Purin de neem et paillage organique")
+                .dureeMinutes(5)
+                .scoreMinimum(70)
+                .lecon(lecPiment1)
+                .build());
+
+        QuestionQuiz qPiment1 = questionQuizRepository.save(QuestionQuiz.builder()
+                .enonce("Quel est le rôle principal du purin de neem en maraîchage ?")
+                .ordre(1)
+                .points(10)
+                .quiz(quizPiment1)
+                .build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Répulsif et insecticide naturel contre thrips et acariens").estCorrecte(true).ordre(1).questionQuiz(qPiment1).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Désherbant chimique total").estCorrecte(false).ordre(2).questionQuiz(qPiment1).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Colorant pour les fruits").estCorrecte(false).ordre(3).questionQuiz(qPiment1).build());
+
+        QuestionQuiz qPiment2 = questionQuizRepository.save(QuestionQuiz.builder()
+                .enonce("De combien de degrés le paillage organique peut-il abaisser la température du sol ?")
+                .ordre(2)
+                .points(10)
+                .quiz(quizPiment1)
+                .build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("De 4 à 5°C en conservant l'humidité").estCorrecte(true).ordre(1).questionQuiz(qPiment2).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Il augmente la température de 20°C").estCorrecte(false).ordre(2).questionQuiz(qPiment2).build());
+        reponseQuizRepository.save(ReponseQuiz.builder().texte("Le paillage n'a aucun effet thermique").estCorrecte(false).ordre(3).questionQuiz(qPiment2).build());
 
         // 6. Alertes Saisonnières
         alerteRepository.save(Alerte.builder()

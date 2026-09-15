@@ -13,21 +13,24 @@ export const DashboardPage: React.FC = () => {
   const [exploitations, setExploitations] = useState<Exploitation[]>([]);
   const [alertes, setAlertes] = useState<Alerte[]>([]);
   const [formations, setFormations] = useState<Formation[]>([]);
+  const [mesCours, setMesCours] = useState<Formation[]>([]);
   const [recentQuestions, setRecentQuestions] = useState<QuestionForum[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [expRes, altRes, formRes, forumRes] = await Promise.all([
+        const [expRes, altRes, formRes, mesCoursRes, forumRes] = await Promise.all([
           api.get<Exploitation[]>('/exploitations'),
           api.get<Alerte[]>('/alertes'),
           api.get<Formation[]>('/formations'),
+          api.get<Formation[]>('/formations/mes-cours').catch(() => ({ data: [] })),
           api.get<QuestionForum[]>('/forum/questions')
         ]);
         setExploitations(expRes.data);
         setAlertes(altRes.data);
         setFormations(formRes.data);
+        setMesCours(mesCoursRes.data);
         setRecentQuestions(forumRes.data.slice(0, 3));
       } catch (err) {
         console.error('Erreur chargement dashboard', err);
@@ -111,50 +114,68 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* 4 Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Link to="/exploitations" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase">Exploitations</span>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-              <Tractor className="w-5 h-5" />
-            </div>
+      {/* 4 Stats Cards Accusoft */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Card 1: Exploitations */}
+        <Link 
+          to="/exploitations" 
+          className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-md transition-shadow group"
+        >
+          <div>
+            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">Mes Parcelles</span>
+            <div className="text-3xl font-black text-slate-900 mt-1">{exploitations.length}</div>
+            <span className="text-xs text-emerald-600 font-bold mt-0.5 inline-block">{totalCultures} culture(s) déclarée(s)</span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2">{exploitations.length}</div>
-          <div className="text-xs text-slate-500 mt-1">{totalCultures} culture(s) déclarée(s)</div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <Tractor className="w-6 h-6" />
+          </div>
         </Link>
 
-        <Link to="/alertes" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase">Alertes Saison</span>
-            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-              <Bell className="w-5 h-5" />
-            </div>
+        {/* Card 2: Formations */}
+        <Link 
+          to="/formations" 
+          className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-md transition-shadow group"
+        >
+          <div>
+            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">Formations</span>
+            <div className="text-3xl font-black text-slate-900 mt-1">{formations.length}</div>
+            <span className="text-xs text-blue-600 font-bold mt-0.5 inline-block">Modules & Quiz pratiques</span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2">{alertes.length}</div>
-          <div className="text-xs text-amber-600 font-semibold mt-1">{unreadAlerts.length} non lue(s)</div>
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <BookOpen className="w-6 h-6" />
+          </div>
         </Link>
 
-        <Link to="/formations" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase">Formations</span>
-            <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-              <BookOpen className="w-5 h-5" />
-            </div>
+        {/* Card 3: Forum Maraîcher */}
+        <Link 
+          to="/forum" 
+          className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between hover:shadow-md transition-shadow group"
+        >
+          <div>
+            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">Forum Maraîcher</span>
+            <div className="text-3xl font-black text-slate-900 mt-1">{recentQuestions.length}</div>
+            <span className="text-xs text-purple-600 font-bold mt-0.5 inline-block">Entraide & Agronomes</span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2">{formations.length}</div>
-          <div className="text-xs text-blue-600 font-semibold mt-1">Modules & Quiz</div>
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <MessageSquare className="w-6 h-6" />
+          </div>
         </Link>
 
-        <Link to="/forum" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase">Forum Maraîcher</span>
-            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-              <MessageSquare className="w-5 h-5" />
-            </div>
+        {/* Card 4: Alertes Saisonnières (Carte Pleine en Dégradé Signature Accusoft) */}
+        <Link 
+          to="/alertes" 
+          className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 p-5 rounded-2xl text-white shadow-lg shadow-emerald-800/20 flex items-center justify-between hover:scale-[1.02] transition-transform group"
+        >
+          <div>
+            <span className="text-[11px] font-extrabold text-emerald-200 uppercase tracking-wider block">Alertes Saison</span>
+            <div className="text-3xl font-black text-white mt-1">{alertes.length}</div>
+            <span className="text-xs text-emerald-100 font-medium mt-0.5 inline-block">
+              {unreadAlerts.length > 0 ? `${unreadAlerts.length} non lue(s)` : 'Toutes lues'} • Météo & Parasites
+            </span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-2">{recentQuestions.length}</div>
-          <div className="text-xs text-purple-600 font-semibold mt-1">Entraide & Experts</div>
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs text-white flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+            <Bell className="w-6 h-6 text-amber-300" />
+          </div>
         </Link>
       </div>
 
@@ -225,16 +246,20 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Formations Disponibles</h2>
-                <p className="text-xs text-slate-500">Modules pratiques de Casamance</p>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {mesCours.length > 0 ? 'Mes Cours En Cours' : 'Formations Disponibles'}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {mesCours.length > 0 ? 'Reprenez votre apprentissage' : 'Modules pratiques de Casamance'}
+                </p>
               </div>
               <Link to="/formations" className="text-xs font-bold text-emerald-600 hover:text-emerald-700">
-                Catalogue
+                {mesCours.length > 0 ? 'Tous les cours' : 'Catalogue'}
               </Link>
             </div>
 
             <div className="space-y-4">
-              {formations.map(f => (
+              {(mesCours.length > 0 ? mesCours : formations.slice(0, 3)).map(f => (
                 <div key={f.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="flex items-start space-x-3">
                     <img
@@ -243,9 +268,16 @@ export const DashboardPage: React.FC = () => {
                       className="w-16 h-16 rounded-xl object-cover shrink-0"
                     />
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                        {f.niveau}
-                      </span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                          {f.niveau}
+                        </span>
+                        {f.culture && (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                            {f.culture.nom}
+                          </span>
+                        )}
+                      </div>
                       <h4 className="font-bold text-xs text-slate-900 line-clamp-2">{f.titre}</h4>
                     </div>
                   </div>
@@ -254,7 +286,7 @@ export const DashboardPage: React.FC = () => {
                     to={`/formations/${f.id}`}
                     className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center justify-center space-x-1"
                   >
-                    <span>Consulter le cours</span>
+                    <span>{mesCours.length > 0 ? 'Reprendre la leçon' : 'Consulter le cours'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

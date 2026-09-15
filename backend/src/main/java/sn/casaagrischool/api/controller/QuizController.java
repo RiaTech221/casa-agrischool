@@ -38,6 +38,35 @@ public class QuizController {
         return ResponseEntity.ok(quizService.submitQuiz(id, request, userDetails));
     }
 
+    @GetMapping("/lecon/{leconId}")
+    @Operation(summary = "Obtenir le quiz d'une leçon")
+    public ResponseEntity<QuizDetailDto> getQuizByLeconId(@PathVariable Long leconId) {
+        return ResponseEntity.ok(quizService.getQuizByLeconId(leconId));
+    }
+
+    @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('EXPERT')")
+    @Operation(summary = "Créer un nouveau quiz rattaché à une leçon (Admin / Expert)")
+    public ResponseEntity<QuizDetailDto> createQuiz(@jakarta.validation.Valid @RequestBody sn.casaagrischool.api.dto.QuizCreateDto dto) {
+        return ResponseEntity.ok(quizService.createQuiz(dto));
+    }
+
+    @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('EXPERT')")
+    @Operation(summary = "Modifier un quiz existant (Admin / Expert)")
+    public ResponseEntity<QuizDetailDto> updateQuiz(
+            @PathVariable Long id,
+            @jakarta.validation.Valid @RequestBody sn.casaagrischool.api.dto.QuizCreateDto dto) {
+        return ResponseEntity.ok(quizService.updateQuiz(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('EXPERT')")
+    @Operation(summary = "Supprimer un quiz (Admin / Expert)")
+    public ResponseEntity<sn.casaagrischool.api.dto.MessageResponse> deleteQuiz(@PathVariable Long id) {
+        return ResponseEntity.ok(quizService.deleteQuiz(id));
+    }
+
     @GetMapping("/results")
     @Operation(summary = "Historique des résultats de quiz de l'utilisateur connecté")
     public ResponseEntity<List<ResultatQuiz>> getMyResults(@AuthenticationPrincipal UserDetailsImpl userDetails) {

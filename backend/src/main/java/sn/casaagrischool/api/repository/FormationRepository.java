@@ -11,4 +11,6 @@ import java.util.List;
 public interface FormationRepository extends JpaRepository<Formation, Long> {
     List<Formation> findByStatut(StatutContenu statut);
     List<Formation> findByCultureIdAndStatut(Long cultureId, StatutContenu statut);
+    List<Formation> findByCreateurIdOrderByCreatedAtDesc(Long createurId);
+    long countByCreateurId(Long createurId);
 }

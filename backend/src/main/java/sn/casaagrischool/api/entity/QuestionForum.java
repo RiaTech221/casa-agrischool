@@ -40,8 +40,18 @@ public class QuestionForum {
     private StatutQuestion statut = StatutQuestion.OUVERTE;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "auteur_id", nullable = false)
+    @JoinColumn(name = "auteur_id", nullable = true)
     private User auteur;
+
+    private String auteurNom;
+
+    private String tags;
+
+    @Builder.Default
+    private Integer votes = 0;
+
+    @Builder.Default
+    private Integer vues = 0;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "categorie_id", nullable = false)

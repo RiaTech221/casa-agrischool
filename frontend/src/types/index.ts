@@ -83,6 +83,8 @@ export interface Lecon {
   typeContenu: 'TEXTE' | 'VIDEO';
   ordre: number;
   dureeEstimee: number;
+  fichierJointUrl?: string;
+  fichierJointNom?: string;
   quiz?: Quiz;
 }
 
@@ -111,6 +113,33 @@ export interface ReponseQuiz {
 
 export interface ProgressionFormation {
   id?: number;
+  formationId?: number;
+  pourcentage: number;
+  statut: 'NON_COMMENCEE' | 'EN_COURS' | 'TERMINEE';
+  dateDebut?: string;
+  dateFin?: string;
+  estInscrit?: boolean;
+  leconsValideesIds?: number[];
+  leconsLuesIds?: number[];
+}
+
+export interface ExpertStats {
+  totalFormations: number;
+  totalLecons: number;
+  totalApprenants: number;
+  totalTermines: number;
+}
+
+export interface ExpertApprenant {
+  id: number;
+  apprenantId: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+  localisation?: string;
+  formationId: number;
+  formationTitre: string;
   pourcentage: number;
   statut: 'NON_COMMENCEE' | 'EN_COURS' | 'TERMINEE';
   dateDebut?: string;
@@ -167,8 +196,12 @@ export interface QuestionForum {
   titre: string;
   contenu: string;
   imageUrl?: string;
+  auteurNom?: string;
+  tags?: string;
+  votes: number;
+  vues: number;
   statut: 'OUVERTE' | 'RESOLUE' | 'FERMEE';
-  auteur: User;
+  auteur?: User;
   categorie: CategorieForum;
   culture?: Culture;
   reponses: ReponseForum[];
@@ -178,8 +211,13 @@ export interface QuestionForum {
 export interface ReponseForum {
   id: number;
   contenu: string;
+  auteurNom?: string;
+  votes: number;
+  noteMoyenne?: number;
+  totalVotes?: number;
+  etoiles?: number;
   estMeilleureReponse: boolean;
-  auteur: User;
+  auteur?: User;
   createdAt: string;
 }
 

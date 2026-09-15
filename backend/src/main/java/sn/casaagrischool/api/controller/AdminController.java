@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import sn.casaagrischool.api.dto.AdminStatsDto;
 import sn.casaagrischool.api.dto.MessageResponse;
+import sn.casaagrischool.api.entity.Exploitation;
 import sn.casaagrischool.api.entity.User;
 import sn.casaagrischool.api.service.AdminService;
 
@@ -34,6 +35,26 @@ public class AdminController {
         return ResponseEntity.ok(adminService.getAllUsers());
     }
 
+    @PostMapping("/users")
+    @Operation(summary = "Créer un nouvel utilisateur")
+    public ResponseEntity<User> createUser(@jakarta.validation.Valid @RequestBody sn.casaagrischool.api.dto.AdminUserCreateDto dto) {
+        return ResponseEntity.ok(adminService.createUser(dto));
+    }
+
+    @PutMapping("/users/{id}")
+    @Operation(summary = "Modifier un utilisateur existant")
+    public ResponseEntity<User> updateUser(
+            @PathVariable Long id,
+            @jakarta.validation.Valid @RequestBody sn.casaagrischool.api.dto.AdminUserUpdateDto dto) {
+        return ResponseEntity.ok(adminService.updateUser(id, dto));
+    }
+
+    @DeleteMapping("/users/{id}")
+    @Operation(summary = "Supprimer définitivement un utilisateur")
+    public ResponseEntity<MessageResponse> deleteUser(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.deleteUser(id));
+    }
+
     @PutMapping("/users/{id}/toggle-active")
     @Operation(summary = "Activer ou désactiver le compte d'un utilisateur")
     public ResponseEntity<MessageResponse> toggleUserActive(@PathVariable Long id) {
@@ -58,5 +79,17 @@ public class AdminController {
     public ResponseEntity<MessageResponse> deleteAnswer(@PathVariable Long id) {
         adminService.deleteAnswer(id);
         return ResponseEntity.ok(new MessageResponse("Réponse supprimée par la modération"));
+    }
+
+    @PostMapping("/reset-progress-and-points")
+    @Operation(summary = "Réinitialiser toutes les progressions, validations de leçons et remettre les points de tous les utilisateurs à 0")
+    public ResponseEntity<MessageResponse> resetProgressAndPoints() {
+        return ResponseEntity.ok(adminService.resetProgressAndPoints());
+    }
+
+    @GetMapping("/exploitations")
+    @Operation(summary = "Lister toutes les exploitations maraîchères déclarées en Casamance")
+    public ResponseEntity<List<Exploitation>> getAllExploitations() {
+        return ResponseEntity.ok(adminService.getAllExploitations());
     }
 }

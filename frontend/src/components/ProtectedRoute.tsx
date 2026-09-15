@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
-  requiredRole?: string;
+  requiredRole?: string | string[];
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) => {
@@ -24,8 +24,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRole }) 
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && !user?.roles?.includes(requiredRole)) {
-    return <Navigate to="/dashboard" replace />;
+  if (requiredRole) {
+    const rolesList = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    const userRoleNames = (user?.roles || []).map((r: any) => typeof r === 'string' ? r : r?.nom);
+    const hasRequiredRole = rolesList.some(r => userRoleNames.includes(r));
+    if (!hasRequiredRole) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return <Outlet />;

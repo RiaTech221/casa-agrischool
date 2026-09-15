@@ -88,6 +88,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "Fichier trop volumineux");
+        body.put("message", "Le fichier sélectionné dépasse la taille maximale autorisée (50 Mo).");
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
     // SEC-05: Ne jamais exposer de stack trace, SQL, Hibernate, etc. au client.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex) {

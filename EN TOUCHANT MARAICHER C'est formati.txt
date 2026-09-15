@@ -1,0 +1,11 @@
+EN TOUCHANT MARAICHER C'est formation qui vient les deux onglet point vers la meme route
+
+pour le volet cour on doit pouvoir importer une pieces joint soit fichier pdf telechargeable des que lapprenant fini de lire le cour automatiquement le quiz se debloque une fois les 70% atteint le prochain cours se debloque ainsi de suite  
+les experts eux cree toutes  les lecons pour la creation de lecon on doit avoir des champs pour en créer comme titre contenu et dans contenu importer un fichier tu comprend 
+de plus volet expert on doit personnaliser au lieu de rejoindre le cours c'est ajouter un cours supprimer modifier etc donc son interface doit etre different de l'interface apprenant 
+expert na pas besoins des onglet comme mes culture   au niveau du tableau de board expert , on doit personnaliser voir les apprenant qui suivent ses cours , leurs progressions  les forum et meme alerte cote expert doit etre personnaliser  tu comprend alerte cote expert doit etre different de alerte cote apprenant
+de plus chaque expert doit se limiter uniquement aux formations et cours de son domaine ok 
+
+par ailleur actuellement on dirai que forum c'est juste du coté frontend il faut que les donnee vienne du backend on doit implementer et tout relier backend comme frontend de plus pour les votes c'est seulement pour les reponse et la personne qui donne la reponse ne doit pas pouvoir voter a sa reponse et je veux aussi des etoiles sur les votes tu capte interface connexion si on pouvait plus embelir je ne dirai pas non
+
+le dashboard admin aussi est a personnaliser en fonction de ce que fait ladmin juste et doit etre diiferent du dashboard apprenant  

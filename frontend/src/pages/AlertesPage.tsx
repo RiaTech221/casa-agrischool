@@ -15,6 +15,15 @@ export const AlertesPage: React.FC = () => {
     try {
       const res = await api.get<Alerte[]>('/alertes');
       setAlertes(res.data);
+      
+      // Auto-mark unread as read
+      const unread = res.data.filter(a => !a.lu);
+      for (const alerte of unread) {
+        api.put(`/alertes/${alerte.id}/read`).catch(() => {});
+      }
+      if (unread.length > 0) {
+        setAlertes(prev => prev.map(a => (!a.lu ? { ...a, lu: true, dateLecture: new Date().toISOString() } : a)));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -28,8 +37,10 @@ export const AlertesPage: React.FC = () => {
 
   const handleMarkAsRead = async (id: number) => {
     try {
-      await api.put(`/alertes/${id}/read`);
-      setAlertes(prev => prev.map(a => a.id === id ? { ...a, lu: true, dateLecture: new Date().toISOString() } : a));
+      if (!alertes.find(a => a.id === id)?.lu) {
+        await api.put(`/alertes/${id}/read`);
+        setAlertes(prev => prev.map(a => a.id === id ? { ...a, lu: true, dateLecture: new Date().toISOString() } : a));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -55,7 +66,10 @@ export const AlertesPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mb-2">
+            <button onClick={() => window.history.back()} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Alertes Saisonnières & Météo</h1>
             {unreadCount > 0 && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-amber-950">

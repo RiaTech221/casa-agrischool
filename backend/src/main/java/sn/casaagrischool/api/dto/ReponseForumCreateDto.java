@@ -7,4 +7,6 @@ import lombok.Data;
 public class ReponseForumCreateDto {
     @NotBlank
     private String contenu;
+
+    private String auteurNom;
 }

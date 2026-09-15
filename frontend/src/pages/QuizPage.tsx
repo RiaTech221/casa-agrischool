@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Award, Clock, CheckCircle2, XCircle, ArrowLeft, RotateCcw, Sparkles 
 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const QuizPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { refreshUser } = useAuth();
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -237,13 +238,35 @@ export const QuizPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="pt-4 flex justify-center">
-          <Link
-            to="/formations"
-            className="px-8 py-3.5 rounded-2xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors"
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            onClick={() => {
+              setSelectedAnswers({});
+              setSubmitted(false);
+              setResult(null);
+              const totalSeconds = (quiz.dureeMinutes || 5) * 60;
+              setTimeLeft(totalSeconds);
+              setTimerActive(true);
+              setStartTime(Date.now());
+            }}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-xs shadow-md transition-colors flex items-center justify-center space-x-2"
           >
-            Poursuivre mon apprentissage
-          </Link>
+            <RotateCcw className="w-4 h-4" />
+            <span>Recommencer le quiz</span>
+          </button>
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1);
+              } else {
+                navigate('/formations');
+              }
+            }}
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-700 text-white font-bold text-xs hover:bg-emerald-600 transition-colors text-center shadow-md flex items-center justify-center space-x-2"
+          >
+            <span>Retourner au cours (Leçon débloquée)</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+          </button>
         </div>
       )}
     </div>

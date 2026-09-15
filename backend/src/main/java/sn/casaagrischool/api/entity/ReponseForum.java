@@ -36,8 +36,22 @@ public class ReponseForum {
     private QuestionForum question;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "auteur_id", nullable = false)
+    @JoinColumn(name = "auteur_id", nullable = true)
     private User auteur;
+
+    private String auteurNom;
+
+    @Builder.Default
+    private Integer votes = 0;
+
+    @Builder.Default
+    private Double noteMoyenne = 0.0;
+
+    @Builder.Default
+    private Integer totalVotes = 0;
+
+    @Builder.Default
+    private Integer etoiles = 0;
 
     @CreationTimestamp
     @Column(updatable = false)

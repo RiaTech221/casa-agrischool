@@ -81,7 +81,7 @@ public class WebSecurityConfig {
             // SEC-06: Security Headers
             .headers(headers -> headers
                 .contentTypeOptions(ct -> {}) // X-Content-Type-Options: nosniff
-                .frameOptions(fo -> fo.deny()) // X-Frame-Options: DENY
+                .frameOptions(fo -> fo.sameOrigin()) // X-Frame-Options: SAMEORIGIN
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
                     .maxAgeInSeconds(31536000)) // HSTS 1 an
@@ -94,12 +94,15 @@ public class WebSecurityConfig {
             .authorizeHttpRequests(auth -> 
                 auth.requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/cultures/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/formations/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/modules/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/lecons/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/forum/categories/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/forum/questions/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/cultures", "/api/cultures/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/formations", "/api/formations/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/modules", "/api/modules/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/lecons", "/api/lecons/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/forum/categories", "/api/forum/categories/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/forum/questions", "/api/forum/questions/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/forum/questions", "/api/forum/questions/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/forum/answers", "/api/forum/answers/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/files/download/**").permitAll()
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
             );

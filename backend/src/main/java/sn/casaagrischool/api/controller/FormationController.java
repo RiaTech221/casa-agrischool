@@ -29,6 +29,28 @@ public class FormationController {
         return ResponseEntity.ok(formationService.getAllPublishedFormations(cultureId));
     }
 
+    @GetMapping("/mes-cours")
+    @Operation(summary = "Lister uniquement les cours où l'utilisateur connecté est inscrit")
+    public ResponseEntity<List<Formation>> getMesCoursInscrits(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(formationService.getMesCoursInscrits(userDetails));
+    }
+
+    @PostMapping("/{id}/inscrire")
+    @Operation(summary = "S'inscrire à une formation")
+    public ResponseEntity<sn.casaagrischool.api.dto.ProgressionFormationDto> inscrireFormation(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(formationService.inscrireFormation(id, userDetails));
+    }
+
+    @PostMapping("/lecons/{leconId}/terminer-lecture")
+    @Operation(summary = "Valider la fin de la lecture du cours pour débloquer automatiquement le quiz")
+    public ResponseEntity<MessageResponse> terminerLectureLecon(
+            @PathVariable Long leconId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(formationService.terminerLectureLecon(leconId, userDetails));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Obtenir les détails complets d'une formation avec ses modules et leçons")
     public ResponseEntity<Formation> getFormationById(@PathVariable Long id) {
@@ -37,7 +59,7 @@ public class FormationController {
 
     @GetMapping("/{id}/progression")
     @Operation(summary = "Obtenir la progression de l'utilisateur connecté sur la formation")
-    public ResponseEntity<ProgressionFormation> getProgression(
+    public ResponseEntity<sn.casaagrischool.api.dto.ProgressionFormationDto> getProgression(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(formationService.getProgression(id, userDetails));

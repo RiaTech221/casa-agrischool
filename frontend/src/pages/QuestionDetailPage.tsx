@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, MessageSquare, CheckCircle2, ShieldCheck, 
-  Send, Award, Star, Sprout, User as UserIcon 
+  Send, Award, Star, Sprout, ThumbsUp, ThumbsDown, Eye,
+  Tag as TagIcon, CheckCircle, User as UserIcon
 } from 'lucide-react';
 import api from '../services/api';
 import { QuestionForum, ReponseForum } from '../types';
@@ -10,10 +11,14 @@ import { useAuth } from '../contexts/AuthContext';
 
 export const QuestionDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, refreshUser } = useAuth();
+  const location = useLocation();
+  const { user, isAuthenticated, isExpert, refreshUser } = useAuth();
+
+  const isExpertRoute = location.pathname.startsWith('/expert') || isExpert;
 
   const [question, setQuestion] = useState<QuestionForum | null>(null);
   const [newAnswer, setNewAnswer] = useState('');
+  const [guestAuthorNom, setGuestAuthorNom] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +37,35 @@ export const QuestionDetailPage: React.FC = () => {
     loadQuestion();
   }, [id]);
 
+  const handleVoteAnswer = async (answerId: number, etoiles: number) => {
+    if (!isAuthenticated) {
+      alert("Veuillez vous connecter pour attribuer des étoiles à cette réponse.");
+      return;
+    }
+    try {
+      const res = await api.post(`/forum/answers/${answerId}/vote?etoiles=${etoiles}`);
+      setQuestion((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          reponses: prev.reponses.map((r) =>
+            r.id === answerId
+              ? {
+                  ...r,
+                  etoiles: etoiles,
+                  noteMoyenne: res.data.noteMoyenne,
+                  totalVotes: res.data.totalVotes,
+                  votes: res.data.totalVotes
+                }
+              : r
+          )
+        };
+      });
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Erreur lors de l'enregistrement de votre évaluation");
+    }
+  };
+
   const handleAddAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAnswer.trim()) return;
@@ -39,11 +73,15 @@ export const QuestionDetailPage: React.FC = () => {
 
     try {
       await api.post(`/forum/questions/${id}/answers`, {
-        contenu: newAnswer.trim()
+        contenu: newAnswer.trim(),
+        auteurNom: isAuthenticated ? undefined : (guestAuthorNom.trim() || 'Invité / Maraîcher')
       });
       setNewAnswer('');
+      setGuestAuthorNom('');
       await loadQuestion();
-      await refreshUser();
+      if (isAuthenticated) {
+        await refreshUser();
+      }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Erreur lors de l’envoi de la réponse');
     } finally {
@@ -68,194 +106,320 @@ export const QuestionDetailPage: React.FC = () => {
     );
   }
 
-  const isAuthor = user?.id === question.auteur.id;
+  const isAuthor = user && question.auteur && user.id === question.auteur.id;
   const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+  const canMarkBest = isAuthor || isAdmin || (!question.auteur && isExpert);
+
+  const questionAuthorName = question.auteur
+    ? `${question.auteur.prenom} ${question.auteur.nom}`
+    : (question.auteurNom || 'Maraîcher Anonyme');
+
+  const questionTags = question.tags ? question.tags.split(/[\s,]+/).filter(Boolean) : [];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Back button */}
-      <Link to="/forum" className="inline-flex items-center space-x-1 text-xs font-bold text-slate-500 hover:text-emerald-700">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Bouton retour */}
+      <Link 
+        to={isExpertRoute ? "/expert/forum" : "/forum"} 
+        className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4" />
-        <span>Retour au forum</span>
+        <span>{isExpertRoute ? "Retour au Forum Expert" : "Retour à la liste des questions"}</span>
       </Link>
 
-      {/* Main Question Box */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-              {question.categorie.nom}
-            </span>
-            {question.culture && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 flex items-center space-x-1">
-                <Sprout className="w-3 h-3 text-emerald-600" />
-                <span>{question.culture.nom}</span>
-              </span>
-            )}
-            {question.statut === 'RESOLUE' && (
-              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 flex items-center space-x-1">
-                <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                <span>Résolue</span>
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-slate-400">
-            {new Date(question.createdAt).toLocaleDateString()}
+      {/* En-tête titre & métadonnées question */}
+      <div className="border-b border-slate-200 pb-5 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+            {question.categorie.nom}
           </span>
+          {question.culture && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 flex items-center space-x-1">
+              <Sprout className="w-3 h-3 text-emerald-600" />
+              <span>{question.culture.nom}</span>
+            </span>
+          )}
+          {question.statut === 'RESOLUE' && (
+            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-700 text-white flex items-center space-x-1">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>Résolue (Solution validée)</span>
+            </span>
+          )}
         </div>
 
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
           {question.titre}
         </h1>
 
-        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          {question.contenu}
-        </p>
-
-        {/* Author info */}
-        <div className="pt-2 flex items-center justify-between text-xs text-slate-500">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-900 flex items-center justify-center font-bold text-xs">
-              {question.auteur.prenom[0]}
-            </div>
-            <div>
-              <span className="font-bold text-slate-900 block">{question.auteur.prenom} {question.auteur.nom}</span>
-              <span className="text-[11px] text-slate-400">{question.auteur.localisation || 'Casamance'}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-1 font-semibold text-emerald-700">
-            <MessageSquare className="w-4 h-4" />
-            <span>{question.reponses?.length || 0} réponse(s)</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+          <span>Posée le <strong className="text-slate-700">{new Date(question.createdAt).toLocaleDateString()}</strong></span>
+          <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> <strong>{question.vues || 0}</strong> vues</span>
+          <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> <strong>{question.reponses?.length || 0}</strong> réponses</span>
         </div>
       </div>
 
-      {/* Answers Section */}
-      <div className="space-y-4">
-        <h3 className="text-base font-bold text-slate-900">
-          Réponses ({question.reponses?.length || 0})
-        </h3>
+      {/* Boîte principale Question */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+        <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-line font-normal">
+          {question.contenu}
+        </div>
+
+        {/* Tags */}
+        {questionTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {questionTags.map((tag, idx) => (
+              <span
+                key={idx}
+                className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs font-semibold"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+          {/* Auteur encart bas à droite (Stack Overflow style) */}
+          <div className="flex justify-end pt-4 border-t border-slate-100">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 min-w-[200px] text-xs space-y-1.5">
+              <span className="text-[11px] text-slate-400 block">Posée par :</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-xs">
+                  {question.auteur ? question.auteur.prenom[0] : (question.auteurNom ? question.auteurNom[0].toUpperCase() : 'M')}
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 flex items-center gap-1">
+                    {questionAuthorName}
+                    {(question.auteur?.roles?.includes('ROLE_EXPERT') || question.auteur?.profilExpert?.estVerifie) && (
+                      <span title="Expert vérifié">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    {question.auteur?.localisation || 'Producteur local'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {/* Réponses */}
+      <div className="space-y-6 pt-4">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900">
+            {question.reponses?.length || 0} Réponse(s)
+          </h2>
+          <span className="text-xs text-slate-500">Classées par pertinence & votes</span>
+        </div>
 
         {(!question.reponses || question.reponses.length === 0) ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">
-            Aucune réponse pour le moment. Partagez votre expertise pour aider ce producteur !
+          <div className="p-10 text-center bg-white rounded-3xl border border-slate-200 text-xs text-slate-400 space-y-2">
+            <MessageSquare className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="font-medium text-slate-600">Aucune réponse pour le moment.</p>
+            <p>Partagez votre conseil ou votre expérience de terrain ci-dessous !</p>
           </div>
         ) : (
-          question.reponses.map(rep => {
-            const isExpert = rep.auteur.profilExpert?.estVerifie;
+          question.reponses.map((rep) => {
+            const isRepExpert = rep.auteur?.roles?.includes('ROLE_EXPERT') || rep.auteur?.profilExpert?.estVerifie;
+            const repAuthorName = rep.auteur ? `${rep.auteur.prenom} ${rep.auteur.nom}` : (rep.auteurNom || 'Invité');
 
             return (
               <div
                 key={rep.id}
                 className={`rounded-3xl p-6 border shadow-sm space-y-4 transition-all ${
                   rep.estMeilleureReponse
-                    ? 'bg-amber-50/50 border-amber-300 ring-2 ring-amber-400/20'
-                    : isExpert
-                    ? 'bg-emerald-50/30 border-emerald-300'
+                    ? 'bg-emerald-50/40 border-emerald-400 ring-2 ring-emerald-500/20'
+                    : isRepExpert
+                    ? 'bg-blue-50/30 border-blue-200'
                     : 'bg-white border-slate-200'
                 }`}
               >
-                {/* Meilleure Réponse Banner */}
+                {/* Bandeau Meilleure Réponse */}
                 {rep.estMeilleureReponse && (
-                  <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-400 text-amber-950 font-black text-xs shadow-sm">
-                    <Star className="w-3.5 h-3.5 fill-amber-950" />
-                    <span>Meilleure réponse sélectionnée par l'auteur</span>
+                  <div className="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-emerald-700 text-white font-black text-xs shadow-sm">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Réponse certifiée & acceptée comme solution</span>
                   </div>
                 )}
 
-                {/* Author Info + Expert Badge */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      isExpert ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
-                    }`}>
-                      {rep.auteur.prenom[0]}
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                  {/* Notation par étoiles (Star rating) sur la réponse */}
+                  <div className="flex flex-col items-center sm:items-start gap-2 text-slate-600 shrink-0 bg-slate-50 p-3 rounded-2xl border border-slate-100 min-w-[140px]">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Évaluation</span>
+                    <div className="flex items-center space-x-1">
+                      {[1, 2, 3, 4, 5].map((starVal) => {
+                        const isUserAnswer = user && rep.auteur && user.id === rep.auteur.id;
+                        const rating = rep.noteMoyenne || (rep.votes && rep.votes > 0 ? rep.votes : 0);
+                        const isFilled = starVal <= Math.round(rating);
+
+                        return (
+                          <button
+                            key={starVal}
+                            type="button"
+                            disabled={Boolean(isUserAnswer)}
+                            onClick={() => {
+                              if (isUserAnswer) {
+                                alert("Vous ne pouvez pas voter pour votre propre réponse !");
+                                return;
+                              }
+                              handleVoteAnswer(rep.id, starVal);
+                            }}
+                            className={`p-0.5 rounded transition-transform ${
+                              isUserAnswer 
+                                ? 'cursor-not-allowed opacity-60' 
+                                : 'hover:scale-125 cursor-pointer text-amber-400'
+                            }`}
+                            title={
+                              isUserAnswer
+                                ? "Vous ne pouvez pas voter pour votre propre réponse"
+                                : `Attribuer ${starVal} étoile(s)`
+                            }
+                          >
+                            <Star
+                              className={`w-4 h-4 ${
+                                isFilled
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-slate-300 hover:text-amber-300'
+                              }`}
+                            />
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-sm text-slate-900">
-                          {rep.auteur.prenom} {rep.auteur.nom}
-                        </span>
-                        {isExpert && (
-                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-sm">
-                            <ShieldCheck className="w-3 h-3" />
-                            <span>EXPERT AGRONOME</span>
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400">
-                        {isExpert && rep.auteur.profilExpert?.organisme
-                          ? `${rep.auteur.profilExpert.organisme} • `
-                          : ''}
-                        {new Date(rep.createdAt).toLocaleDateString()}
+
+                    <div className="text-center sm:text-left text-xs">
+                      <span className="font-black text-slate-900">
+                        {rep.noteMoyenne ? rep.noteMoyenne.toFixed(1) : (rep.votes || 0)} / 5
+                      </span>
+                      <span className="text-[10px] text-slate-400 block">
+                        ({rep.totalVotes || (rep.votes ? 1 : 0)} avis)
                       </span>
                     </div>
+
+                    {user && rep.auteur && user.id === rep.auteur.id && (
+                      <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded text-center">
+                        Votre réponse
+                      </span>
+                    )}
+
+                    {/* Bouton Accepter comme meilleure réponse */}
+                    {canMarkBest && (
+                      <button
+                        onClick={() => handleMarkBest(rep.id)}
+                        className={`mt-2 w-full py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 cursor-pointer ${
+                          rep.estMeilleureReponse
+                            ? 'text-emerald-700 bg-emerald-100'
+                            : 'text-slate-500 hover:text-emerald-700 hover:bg-emerald-50'
+                        }`}
+                        title={rep.estMeilleureReponse ? "Solution sélectionnée" : "Valider comme meilleure réponse"}
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span className="text-[10px]">{rep.estMeilleureReponse ? 'Validée' : 'Accepter'}</span>
+                      </button>
+                    )}
                   </div>
 
-                  {/* Mark as best answer button */}
-                  {(isAuthor || isAdmin) && !rep.estMeilleureReponse && (
-                    <button
-                      onClick={() => handleMarkBest(rep.id)}
-                      className="text-xs font-bold text-slate-500 hover:text-amber-600 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-amber-300 transition-colors"
-                    >
-                      Désigner comme solution
-                    </button>
-                  )}
-                </div>
+                  {/* Contenu réponse */}
+                  <div className="flex-1 space-y-4">
+                    <p className="text-xs sm:text-sm text-slate-800 leading-relaxed whitespace-pre-line">
+                      {rep.contenu}
+                    </p>
 
-                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line pl-1">
-                  {rep.contenu}
-                </p>
+                    <div className="flex justify-end">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-2.5 min-w-[200px] text-xs space-y-1 shadow-2xs">
+                        <span className="text-[10px] text-slate-400 block">
+                          Répondu le {new Date(rep.createdAt).toLocaleDateString()}
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                            isRepExpert ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {rep.auteur ? rep.auteur.prenom[0] : (rep.auteurNom ? rep.auteurNom[0].toUpperCase() : 'I')}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 flex items-center gap-1">
+                              {repAuthorName}
+                              {isRepExpert && (
+                                <span className="inline-flex items-center space-x-1 px-2 py-0.2 text-[9px] font-black bg-emerald-600 text-white rounded-full">
+                                  <ShieldCheck className="w-3 h-3" />
+                                  <span>EXPERT</span>
+                                </span>
+                              )}
+                            </div>
+                            {isRepExpert && rep.auteur?.profilExpert?.organisme && (
+                              <span className="text-[10px] text-slate-500 block">
+                                {rep.auteur.profilExpert.organisme}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Add Reply Form */}
-      {user?.roles?.includes('ROLE_MARAICHER') ? (
-        <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200 shadow-sm text-center">
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Seuls les experts et formateurs peuvent répondre aux questions du forum.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-          <h4 className="text-sm font-bold text-slate-900 flex items-center justify-between">
-            <span>Votre réponse</span>
-            <span className="text-xs font-semibold text-emerald-600">+10 points pour participation</span>
-          </h4>
+      {/* Formulaire de réponse (Accessible à tous, connecté ou invité) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+        <h3 className="text-lg font-black text-slate-900 flex items-center justify-between">
+          <span>Votre réponse</span>
+          {isAuthenticated && (
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+              +10 points de réputation
+            </span>
+          )}
+        </h3>
 
-          <form onSubmit={handleAddAnswer} className="space-y-4">
+        <form onSubmit={handleAddAnswer} className="space-y-4">
+          {!isAuthenticated && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Votre Nom ou Pseudo (Facultatif)
+              </label>
+              <input
+                type="text"
+                value={guestAuthorNom}
+                onChange={(e) => setGuestAuthorNom(e.target.value)}
+                placeholder="ex: Dr. Camara / Maraîcher Oussouye (ou laisser vide pour Invité)"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+          )}
+
+          <div>
             <textarea
-              rows={3}
+              rows={4}
               required
               value={newAnswer}
               onChange={(e) => setNewAnswer(e.target.value)}
-              placeholder="Partagez votre conseil ou votre expérience de terrain..."
-              className="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500"
+              placeholder="Rédigez votre réponse claire avec vos préconisations..."
+              className="w-full px-4 py-3 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
+          </div>
 
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-colors flex items-center space-x-2 disabled:opacity-50"
-              >
-                {submitting ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Publier la réponse</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all flex items-center space-x-2 disabled:opacity-50 cursor-pointer"
+            >
+              {submitting ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Publier ma réponse</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

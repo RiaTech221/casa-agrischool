@@ -1,7 +1,28 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sprout, Phone, Mail, MapPin, Heart } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Footer: React.FC = () => {
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+
+  if (location.pathname.startsWith('/expert') || location.pathname.startsWith('/admin')) {
+    return null;
+  }
+  if (isAuthenticated && (
+    location.pathname.startsWith('/dashboard') ||
+    location.pathname.startsWith('/exploitations') ||
+    location.pathname.startsWith('/alertes') ||
+    location.pathname.startsWith('/profile') ||
+    location.pathname.startsWith('/profil') ||
+    location.pathname.startsWith('/formations') ||
+    location.pathname.startsWith('/quiz') ||
+    location.pathname.startsWith('/forum')
+  )) {
+    return null;
+  }
+
   return (
     <footer className="bg-emerald-950 text-emerald-200 border-t border-emerald-900 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

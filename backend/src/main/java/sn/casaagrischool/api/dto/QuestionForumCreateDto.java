@@ -14,6 +14,10 @@ public class QuestionForumCreateDto {
 
     private String imageUrl;
 
+    private String auteurNom;
+    
+    private String tags;
+
     @NotNull
     private Long categorieId;
 

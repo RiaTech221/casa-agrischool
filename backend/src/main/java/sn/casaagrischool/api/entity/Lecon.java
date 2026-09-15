@@ -36,6 +36,11 @@ public class Lecon {
     @Builder.Default
     private Integer dureeEstimee = 10; // minutes
 
+    @Column(columnDefinition = "TEXT")
+    private String fichierJointUrl;
+
+    private String fichierJointNom;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "module_id", nullable = false)
     @JsonIgnore

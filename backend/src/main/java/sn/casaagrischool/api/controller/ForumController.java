@@ -33,12 +33,13 @@ public class ForumController {
     }
 
     @GetMapping("/questions")
-    @Operation(summary = "Lister les questions (filtrable par catégorie, culture ou mot-clé)")
+    @Operation(summary = "Lister les questions (filtrable par catégorie, culture, mot-clé ou tri)")
     public ResponseEntity<List<QuestionForum>> getQuestions(
             @RequestParam(required = false) Long categorieId,
             @RequestParam(required = false) Long cultureId,
-            @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(forumService.getQuestions(categorieId, cultureId, search));
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String sort) {
+        return ResponseEntity.ok(forumService.getQuestions(categorieId, cultureId, search, sort));
     }
 
     @GetMapping("/questions/{id}")
@@ -48,7 +49,7 @@ public class ForumController {
     }
 
     @PostMapping("/questions")
-    @Operation(summary = "Poser une nouvelle question")
+    @Operation(summary = "Poser une nouvelle question (accessible avec ou sans connexion)")
     public ResponseEntity<QuestionForum> createQuestion(
             @Valid @RequestBody QuestionForumCreateDto dto,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
@@ -56,12 +57,29 @@ public class ForumController {
     }
 
     @PostMapping("/questions/{id}/answers")
-    @Operation(summary = "Répondre à une question")
+    @Operation(summary = "Répondre à une question (accessible avec ou sans connexion)")
     public ResponseEntity<ReponseForum> addAnswer(
             @PathVariable Long id,
             @Valid @RequestBody ReponseForumCreateDto dto,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(forumService.addAnswer(id, dto, userDetails));
+    }
+
+    @PostMapping("/questions/{id}/vote")
+    @Operation(summary = "Voter (+1 ou -1) pour une question")
+    public ResponseEntity<MessageResponse> voteQuestion(
+            @PathVariable Long id,
+            @RequestParam int value) {
+        return ResponseEntity.ok(forumService.voteQuestion(id, value));
+    }
+
+    @PostMapping("/answers/{id}/vote")
+    @Operation(summary = "Voter avec des étoiles (1 à 5 étoiles) pour une réponse")
+    public ResponseEntity<MessageResponse> voteReponse(
+            @PathVariable Long id,
+            @RequestParam int value,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(forumService.voteReponse(id, value, userDetails));
     }
 
     @PutMapping("/answers/{answerId}/best")

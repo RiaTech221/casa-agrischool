@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   User as UserIcon, Award, ShieldCheck, MapPin, Phone, Mail, 
   Save, CheckCircle2, BookOpen, Clock, Sparkles 
@@ -10,6 +11,14 @@ import { ResultatQuiz } from '../types';
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshUser, isExpert, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isExpert && !location.pathname.startsWith('/expert')) {
+      navigate('/expert/profile', { replace: true });
+    }
+  }, [isExpert, location.pathname, navigate]);
 
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
@@ -92,18 +101,48 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Points & Badge Status */}
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center space-x-4 shrink-0">
-          <div className="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-md">
-            <Award className="w-7 h-7" />
-          </div>
-          <div>
-            <div className="text-2xl font-black text-white">{user.points || 0} pts</div>
-            <div className="text-xs font-semibold text-emerald-200">
-              {user.points > 100 ? 'Agriculteur Confirmé ⭐' : 'Maraîcher Apprenant 🌱'}
+        {/* Statut & Privilèges (Admin), Statut & Agrément (Expert) ou Points & Badge (Maraîcher) */}
+        {isAdmin ? (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center space-x-4 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-emerald-400 text-emerald-950 flex items-center justify-center font-black shadow-md">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="text-lg font-black text-white">Privilèges Totaux</div>
+              <div className="text-xs font-semibold text-emerald-200 flex items-center gap-1">
+                <span>Supervision Générale</span>
+                <span>•</span>
+                <span>Root / Admin</span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : isExpert ? (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center space-x-4 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-emerald-400 text-emerald-950 flex items-center justify-center font-black shadow-md">
+              <ShieldCheck className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="text-lg font-black text-white">Formateur Agronome</div>
+              <div className="text-xs font-semibold text-emerald-200 flex items-center gap-1">
+                <span>Agrément Officiel</span>
+                <span>•</span>
+                <span>Casamance</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center space-x-4 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black shadow-md">
+              <Award className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="text-2xl font-black text-white">{user.points || 0} pts</div>
+              <div className="text-xs font-semibold text-emerald-200">
+                {user.points > 100 ? 'Agriculteur Confirmé ⭐' : 'Maraîcher Apprenant 🌱'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -232,37 +271,134 @@ export const ProfilePage: React.FC = () => {
           </form>
         </div>
 
-        {/* Historique des Quiz */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-bold text-slate-900">Historique de mes Quiz</h2>
-            <p className="text-xs text-slate-500">Scores enregistrés et validés côté serveur</p>
-          </div>
-
-          {results.length === 0 ? (
-            <p className="text-xs text-slate-400 italic py-4">Aucun quiz passé pour le moment.</p>
-          ) : (
-            <div className="space-y-3">
-              {results.map(r => (
-                <div key={r.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{r.quiz?.titre || 'Évaluation'}</span>
-                    <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                      r.reussi ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {r.reussi ? 'RÉUSSI' : 'ÉCHOUÉ'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-500 text-[11px] pt-1">
-                    <span>Score : <strong className="text-slate-800">{r.score}%</strong> ({r.nombreBonnesReponses}/{r.totalQuestions})</span>
-                    <span>{new Date(r.datePassage).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
+        {/* Colonne Droite : Prérogatives Admin, Prérogatives Expert ou Historique des Quiz (Maraîcher) */}
+        {isAdmin ? (
+          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold text-slate-900">Prérogatives & Sécurité Système</h2>
+              <p className="text-xs text-slate-500">Droits d'administration générale de Casa AgriSchool</p>
             </div>
-          )}
 
-        </div>
+            <div className="space-y-3.5">
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-1">
+                <div className="flex items-center space-x-2 text-emerald-900 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                  <span>Gestion des Comptes & Rôles</span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  Création, modification et suppression des comptes. Activation ou révocation instantanée des accès.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-1">
+                <div className="flex items-center space-x-2 text-blue-900 font-bold text-xs">
+                  <Award className="w-4 h-4 text-blue-700" />
+                  <span>Accréditation des Experts Agronomes</span>
+                </div>
+                <p className="text-[11px] text-blue-800 leading-relaxed">
+                  Examen et validation officielle des dossiers d'experts avant autorisation de publication de formations.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-1">
+                <div className="flex items-center space-x-2 text-amber-950 font-bold text-xs">
+                  <BookOpen className="w-4 h-4 text-amber-700" />
+                  <span>Supervision des Contenus & Modération</span>
+                </div>
+                <p className="text-[11px] text-amber-900 leading-relaxed">
+                  Contrôle éditorial des formations, modération du forum et diffusion des alertes agricoles d'urgence.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100">
+              <Link
+                to="/admin"
+                className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
+              >
+                <span>Accéder au Tableau de Bord Administrateur →</span>
+              </Link>
+            </div>
+          </div>
+        ) : isExpert ? (
+          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-5">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold text-slate-900">Rôle & Prérogatives Expert</h2>
+              <p className="text-xs text-slate-500">Missions officielles au sein de Casa AgriSchool</p>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-1">
+                <div className="flex items-center space-x-2 text-emerald-900 font-bold text-xs">
+                  <BookOpen className="w-4 h-4 text-emerald-700" />
+                  <span>Conception Pédagogique</span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-relaxed">
+                  Création et structuration des formations techniques maraîchères, modules et cours téléchargeables (PDF).
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-1">
+                <div className="flex items-center space-x-2 text-amber-950 font-bold text-xs">
+                  <Award className="w-4 h-4 text-amber-700" />
+                  <span>Évaluations & Quiz</span>
+                </div>
+                <p className="text-[11px] text-amber-900 leading-relaxed">
+                  Conception des évaluations chronométrées et contrôle de validation (seuil de réussite fixé à 70%).
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-1">
+                <div className="flex items-center space-x-2 text-blue-900 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4 text-blue-700" />
+                  <span>Alertes & Assistance Terrain</span>
+                </div>
+                <p className="text-[11px] text-blue-800 leading-relaxed">
+                  Diffusion d'alertes phytosanitaires d'urgence et réponses directes aux producteurs sur le forum.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100">
+              <Link
+                to="/expert/formations"
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
+              >
+                <span>Accéder à mes formations & cours →</span>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold text-slate-900">Historique de mes Quiz</h2>
+              <p className="text-xs text-slate-500">Scores enregistrés et validés côté serveur</p>
+            </div>
+
+            {results.length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-4">Aucun quiz passé pour le moment.</p>
+            ) : (
+              <div className="space-y-3">
+                {results.map(r => (
+                  <div key={r.id} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900">{r.quiz?.titre || 'Évaluation'}</span>
+                      <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                        r.reussi ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {r.reussi ? 'RÉUSSI' : 'ÉCHOUÉ'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-500 text-[11px] pt-1">
+                      <span>Score : <strong className="text-slate-800">{r.score}%</strong> ({r.nombreBonnesReponses}/{r.totalQuestions})</span>
+                      <span>{new Date(r.datePassage).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

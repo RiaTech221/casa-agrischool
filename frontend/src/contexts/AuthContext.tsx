@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (identifiant: string, motDePasse: string) => Promise<void>;
+  login: (identifiant: string, motDePasse: string) => Promise<User>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -45,13 +45,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (identifiant: string, motDePasse: string) => {
+  const login = async (identifiant: string, motDePasse: string): Promise<User> => {
     const response = await api.post('/auth/login', { identifiant, motDePasse });
     const { token: jwt, ...userData } = response.data;
     setToken(jwt);
     setUser(userData as User);
     localStorage.setItem('casa_token', jwt);
     localStorage.setItem('casa_user', JSON.stringify(userData));
+    return userData as User;
   };
 
   const register = async (formData: any) => {

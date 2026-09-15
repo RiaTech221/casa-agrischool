@@ -26,6 +26,8 @@ public class FormationService {
     private final UserRepository userRepository;
     private final CultureRepository cultureRepository;
 
+    private final LeconValidationRepository leconValidationRepository;
+
     public List<Formation> getAllPublishedFormations(Long cultureId) {
         if (cultureId != null) {
             return formationRepository.findByCultureIdAndStatut(cultureId, StatutContenu.PUBLIE);
@@ -48,18 +50,86 @@ public class FormationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Leçon introuvable avec l'ID: " + id));
     }
 
-    public ProgressionFormation getProgression(Long formationId, UserDetailsImpl userDetails) {
-        return progressionRepository.findByUserIdAndFormationId(userDetails.getId(), formationId)
+    public List<Formation> getMesCoursInscrits(UserDetailsImpl userDetails) {
+        List<ProgressionFormation> progressions = progressionRepository.findByUserId(userDetails.getId());
+        return progressions.stream()
+                .map(ProgressionFormation::getFormation)
+                .filter(f -> f != null && f.getStatut() == StatutContenu.PUBLIE)
+                .distinct()
+                .toList();
+    }
+
+    public sn.casaagrischool.api.dto.ProgressionFormationDto getProgression(Long formationId, UserDetailsImpl userDetails) {
+        ProgressionFormation prog = progressionRepository.findByUserIdAndFormationId(userDetails.getId(), formationId)
+                .orElse(null);
+
+        List<Long> validatedLessonIds = leconValidationRepository.findValidatedLeconIdsByUserIdAndFormationId(userDetails.getId(), formationId);
+        List<Long> readLessonIds = leconValidationRepository.findReadLeconIdsByUserIdAndFormationId(userDetails.getId(), formationId);
+
+        return sn.casaagrischool.api.dto.ProgressionFormationDto.builder()
+                .id(prog != null ? prog.getId() : null)
+                .formationId(formationId)
+                .pourcentage(prog != null ? prog.getPourcentage() : 0)
+                .statut(prog != null ? prog.getStatut() : StatutProgression.NON_COMMENCEE)
+                .dateDebut(prog != null ? prog.getDateDebut() : null)
+                .dateFin(prog != null ? prog.getDateFin() : null)
+                .estInscrit(prog != null)
+                .leconsValideesIds(validatedLessonIds)
+                .leconsLuesIds(readLessonIds)
+                .build();
+    }
+
+    @Transactional
+    public sn.casaagrischool.api.dto.ProgressionFormationDto inscrireFormation(Long formationId, UserDetailsImpl userDetails) {
+        Formation formation = getFormationById(formationId);
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
+
+        ProgressionFormation prog = progressionRepository.findByUserIdAndFormationId(user.getId(), formationId)
                 .orElseGet(() -> {
-                    Formation f = getFormationById(formationId);
-                    User u = userRepository.getReferenceById(userDetails.getId());
-                    return ProgressionFormation.builder()
-                            .formation(f)
-                            .user(u)
+                    ProgressionFormation newProg = ProgressionFormation.builder()
+                            .formation(formation)
+                            .user(user)
                             .pourcentage(0)
-                            .statut(StatutProgression.NON_COMMENCEE)
+                            .statut(StatutProgression.EN_COURS)
+                            .dateDebut(LocalDateTime.now())
                             .build();
+                    return progressionRepository.save(newProg);
                 });
+
+        return getProgression(formationId, userDetails);
+    }
+
+    @Transactional
+    public MessageResponse terminerLectureLecon(Long leconId, UserDetailsImpl userDetails) {
+        Lecon lecon = getLeconById(leconId);
+        Formation formation = lecon.getModule().getFormation();
+        User user = userRepository.findById(userDetails.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
+
+        // Assurer que l'utilisateur est inscrit à la formation
+        progressionRepository.findByUserIdAndFormationId(user.getId(), formation.getId())
+                .orElseGet(() -> progressionRepository.save(ProgressionFormation.builder()
+                        .formation(formation)
+                        .user(user)
+                        .pourcentage(0)
+                        .statut(StatutProgression.EN_COURS)
+                        .dateDebut(LocalDateTime.now())
+                        .build()));
+
+        LeconValidation validation = leconValidationRepository.findByUserIdAndLeconId(user.getId(), leconId)
+                .orElseGet(() -> LeconValidation.builder()
+                        .user(user)
+                        .lecon(lecon)
+                        .dateValidation(LocalDateTime.now())
+                        .lectureTerminee(true)
+                        .scoreQuiz(0)
+                        .build());
+
+        validation.setLectureTerminee(true);
+        leconValidationRepository.save(validation);
+
+        return new MessageResponse("Lecture terminée avec succès ! Le quiz d'évaluation est désormais débloqué.");
     }
 
     @Transactional
@@ -68,6 +138,25 @@ public class FormationService {
         Formation formation = lecon.getModule().getFormation();
         User user = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur non trouvé"));
+
+        // Règle Casa AgriSchool : si la leçon a un quiz, la validation doit passer par le quiz
+        if (lecon.getQuiz() != null) {
+            throw new RuntimeException("Cette leçon comporte un quiz obligatoire. Vous devez réussir le quiz (>= " + lecon.getQuiz().getScoreMinimum() + "%) pour la valider.");
+        }
+
+        // Vérifier si déjà validée
+        if (leconValidationRepository.existsByUserIdAndLeconId(user.getId(), leconId)) {
+            return new MessageResponse("Leçon déjà validée précédemment. Aucun point supplémentaire.");
+        }
+
+        // Enregistrer la validation
+        LeconValidation validation = LeconValidation.builder()
+                .user(user)
+                .lecon(lecon)
+                .dateValidation(LocalDateTime.now())
+                .scoreQuiz(100)
+                .build();
+        leconValidationRepository.save(validation);
 
         ProgressionFormation prog = progressionRepository
                 .findByUserIdAndFormationId(user.getId(), formation.getId())
@@ -79,21 +168,19 @@ public class FormationService {
                         .dateDebut(LocalDateTime.now())
                         .build());
 
-        // Calculer le pourcentage d'avancement
         long totalLecons = leconRepository.countByModuleFormationId(formation.getId());
-        int nouveauPourcentage = Math.min(100, prog.getPourcentage() + (int) Math.ceil(100.0 / Math.max(1, totalLecons)));
+        long validCount = leconValidationRepository.countByUserIdAndFormationId(user.getId(), formation.getId());
+        int nouveauPourcentage = totalLecons > 0 ? (int) Math.round(((double) validCount / totalLecons) * 100.0) : 100;
 
         prog.setPourcentage(nouveauPourcentage);
-        if (nouveauPourcentage >= 100) {
+        if (nouveauPourcentage >= 100 && prog.getStatut() != StatutProgression.TERMINEE) {
             prog.setStatut(StatutProgression.TERMINEE);
             prog.setDateFin(LocalDateTime.now());
-            // Bonus formation terminée (+100 pts)
             user.setPoints(user.getPoints() + 100);
         } else {
             prog.setStatut(StatutProgression.EN_COURS);
         }
 
-        // Récompense leçon terminée : +10 points
         user.setPoints(user.getPoints() + 10);
         userRepository.save(user);
         progressionRepository.save(prog);
